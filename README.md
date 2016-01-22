@@ -7,6 +7,9 @@
   Android: Tran Vu Xuan Nhat, Zhou Yanjun
   
   RPi: Ma Xiaoxue
+
+##Project Management Plan
+  https://docs.google.com/document/d/1nPEDrrGzLxirSZTuvfMQhUqprsqKE8jHz-uMxeX1Z9M/edit?usp=sharing
   
 ##Reference
   https://github.com/idf/Robot-In-Maze
