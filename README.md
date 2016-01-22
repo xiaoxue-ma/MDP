@@ -9,7 +9,7 @@
   RPi: Ma Xiaoxue
 
 ##Project Management Plan
-  https://docs.google.com/document/d/1nPEDrrGzLxirSZTuvfMQhUqprsqKE8jHz-uMxeX1Z9M/edit?usp=sharing
+  https://entuedu-my.sharepoint.com/personal/yzhou017_e_ntu_edu_sg/Documents/Shared%20with%20Everyone/grp01_project_plan.doc?web=1
   
 ##Reference
   https://github.com/idf/Robot-In-Maze
