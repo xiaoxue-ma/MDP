@@ -1,12 +1,12 @@
 # MDP
 ##Roles:
-  Arduino: Thai Nguyen Hung, Chau Jing Sheng, Tan Yng Tzer
+  Arduino: Thai Nguyen Hung, Chau Jing Sheng, Tan Yng Tzer, Lim Cheng Siang
   
-  Algorithm: Lim Cheng Siang, Zhang Jie
+  Algorithm: Zhang Jie
   
   Android: Tran Vu Xuan Nhat, Zhou Yanjun
   
-  RPi: Ma Xiaoxue
+  Raspberry Pi: Ma Xiaoxue
 
 ##Project Management Plan
   https://entuedu-my.sharepoint.com/personal/yzhou017_e_ntu_edu_sg/Documents/Shared%20with%20Everyone/grp01_project_plan.doc?web=1
