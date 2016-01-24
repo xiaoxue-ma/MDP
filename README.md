@@ -9,7 +9,7 @@
   Raspberry Pi: Ma Xiaoxue
 
 ##Project Management Plan
-  https://entuedu-my.sharepoint.com/personal/yzhou017_e_ntu_edu_sg/Documents/Shared%20with%20Everyone/grp01_project_plan.doc?web=1
+  https://entuedu-my.sharepoint.com/personal/yzhou017_e_ntu_edu_sg/_layouts/15/WopiFrame.aspx?sourcedoc=%7B47d9c5b6-ae68-4d9c-937f-41aa99489e97%7D&action=view
   
 ##Reference
   https://github.com/idf/Robot-In-Maze
