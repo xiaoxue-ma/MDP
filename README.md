@@ -15,6 +15,9 @@
 
 Now each of us has a title. Don't we sound professional? ;)
 
+##Android
+https://github.com/shannonyj/MDPApplication
+
 ##Project Management Plan
   https://entuedu-my.sharepoint.com/personal/yzhou017_e_ntu_edu_sg/_layouts/15/WopiFrame.aspx?sourcedoc=%7B47d9c5b6-ae68-4d9c-937f-41aa99489e97%7D&action=view
   
