@@ -7,8 +7,8 @@ class MapRef(BasePublisher):
     """
     internal representation of the arena map
     """
-    DEFAULT_MAP_SIZE_X = 20
-    DEFAULT_MAP_SIZE_Y = 15
+    DEFAULT_MAP_SIZE_X = 15
+    DEFAULT_MAP_SIZE_Y = 20
 
     # possible values of the each cell
     CLEAR = 0
@@ -24,15 +24,26 @@ class MapRef(BasePublisher):
     _map_ref = [] # 2D matrix
     size_x = 0
     size_y = 0
+    _start_zone_centre_pos = (1,18)
+    _end_zone_centre_pos = (13,1)
 
     _listeners = [] # list of observers
 
     def __init__(self,x=None,y=None,default=None):
+        self.reset(x,y,default)
+
+    def reset(self,x=None,y=None,default=None):
         if (x and y and default):
             self._map_ref = [[default for _ in range(x)] for __ in range(y)]
         else:
             self._map_ref = [[self.DEFAULT_CELL_VALUE for _ in range(self.DEFAULT_MAP_SIZE_X)] for __ in range(self.DEFAULT_MAP_SIZE_Y)]
         self._update_size()
+        self.notify()
+
+    def get_unknown_percentage(self):
+        map_size = self.size_y * self.size_x
+        num_unknown_cells = sum([1 for x in range(self.size_x) for y in range(self.size_y) if self.get_cell(x,y)==self.UNKNOWN])
+        return int(100.0*num_unknown_cells/map_size)
 
     def refresh(self):
         self.notify()
@@ -51,6 +62,14 @@ class MapRef(BasePublisher):
             if (not self.is_out_of_arena(x,y)):
                 self.set_cell(x,y,value,notify=False)
         self.notify()
+
+    def get_surrounding_pos(self,x,y):
+        "return a list of positions that surround (x,y)"
+        return [(x+i,y+j) for i in range(-1,2) for j in range(-1,2) if (i!=0 or j!=0) and not self.is_out_of_arena(x+i,y+j)]
+
+    def get_along_wall_pos(self):
+        "return a list of positions along the wall"
+        return [(x,y) for x in range(self.size_x) for y in range(self.size_y) if x==0 or x==self.size_x-1 or y==0 or y==self.size_y-1]
 
     def load_map_from_file(self,file_name):
         f = open(file_name,mode="r")
@@ -86,10 +105,16 @@ class MapRef(BasePublisher):
 
     def get_end_zone_center_pos(self):
         "this is hardcoded"
-        return self.size_x-2,self.size_y-2
+        if (self._end_zone_centre_pos):
+            return self._end_zone_centre_pos
+        else:
+            return self.size_x-2,self.size_y-2
 
     def get_start_zone_center_pos(self):
-        return 1,1
+        if (self._start_zone_centre_pos):
+            return self._start_zone_centre_pos
+        else:
+            return 1,1
 
 class MapUI(BaseObserver):
     """

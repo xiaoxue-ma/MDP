@@ -4,17 +4,20 @@ from common.amap import MapRef
 
 class AStarShortestPathAlgo():
 
+    # algo settings
     NON_ACCESS_H_VALUE = 1E6
     UNIT_TURN_COST = 1 # cost for every turn
+    END_ALGO_UPON_REACHING_DEST = True
 
+    # algo data
     _nodes = [] # 2D list of nodes
-    _map_ref = []
+    _map_ref = None # MapRef object
     _target_pos = None # tuple
 
     def __init__(self,map_ref,target_pos):
         self._map_ref = map_ref
         self._target_pos = target_pos
-        self._init_matrices(m=self._map_ref.get_size_x(),n=self._map_ref.get_size_y())
+        self._init_matrices(m=self._map_ref.get_size_x(),n=self._map_ref.get_size_y(),map_ref=self._map_ref)
 
     def get_shortest_path(self,robot_pos,robot_ori):
         "return a list of commands for walking through the shortest path"
@@ -25,11 +28,13 @@ class AStarShortestPathAlgo():
         dest_node = self._nodes[self._target_pos[1]][self._target_pos[0]]
         node_q.enqueue(start_node)
         while(not node_q.is_empty()):
-            print("iteration {}".format(num_iterations))
             num_iterations +=1
             # extract min and expand
             cur_node = node_q.dequeue_min()
             cur_node.visited = True
+            # may terminate if the current node is the destination
+            if (self.END_ALGO_UPON_REACHING_DEST and (cur_node.x,cur_node.y)==self._target_pos):
+                break
             neighbours = self.get_neighbour_nodes(cur_node)
             for n in neighbours:
                 new_g = self.compute_g_value(cur_node=cur_node,target_node=n)
@@ -46,8 +51,22 @@ class AStarShortestPathAlgo():
                     node_q.enqueue(n)
         self.print_route(dest_node=dest_node,
                          start_node=start_node)
+        print("number of iterations for finding shortest path: {}".format(num_iterations))
         # return list of commands
         return self.get_command_list(start_node=start_node,end_node=dest_node)
+
+    def _get_inaccessible_pos_list(self,map_ref):
+        "pos where robot will collide with obstacles"
+        pos_list = []
+        # 1 all obstacle positions and surrounding positions
+        for y in range(map_ref.get_size_y()):
+            for x in range(map_ref.get_size_x()):
+                if (map_ref.get_cell(x,y)==MapRef.OBSTACLE):
+                    pos_list.extend(map_ref.get_surrounding_pos(x,y))
+                    pos_list.append((x,y))
+        # 2 near wall positions
+        pos_list.extend(map_ref.get_along_wall_pos())
+        return list(set(pos_list))
 
     def get_command_list(self,start_node,end_node):
         "return list of commands"
@@ -85,13 +104,16 @@ class AStarShortestPathAlgo():
         neighbour_nodes= []
         for pos in neighbour_rel_pos:
             x,y = (pos[0] + node.x) , (pos[1] + node.y)
-            if (not self._map_ref.is_out_of_arena(x,y)):
+            if (not self._map_ref.is_out_of_arena(x,y) and self._nodes[y][x]!=None):
                 neighbour_nodes.append(self._nodes[y][x])
         return neighbour_nodes
 
-    def _init_matrices(self,m,n):
-        "initialize all matrices to m*n"
-        self._nodes = [[Node(x,y,self._get_heuristic_value(x,y)) for x in range(m)] for y in range(n)]
+    def _init_matrices(self,m,n,map_ref):
+        "initialize all matrices to m*n, for inaccessible positions, None will be put"
+        inaccessible_list = self._get_inaccessible_pos_list(map_ref)
+        self._nodes = [[None if (x,y) in inaccessible_list else Node(x,y,self._get_heuristic_value(x,y))
+                        for x in range(m)]
+                       for y in range(n)]
 
     def _get_heuristic_value(self,x,y):
         return abs(x-self._target_pos[0]) + abs(y-self._target_pos[1]) if self._map_ref.get_cell(x,y)==MapRef.CLEAR else self.NON_ACCESS_H_VALUE

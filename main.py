@@ -46,13 +46,8 @@ def main():
     # start input threads
     thread.start_new_thread(read_from_interface,(to_control,arduino_interface,))
     thread.start_new_thread(read_from_interface,(to_control,android_interface,))
-    controller = CentralController()
-    controller.control_task(input_queue=to_control,command_out_queue=to_arduino,data_out_queues=[to_pc,to_android])
-    # # start control thread
-    # thread.start_new_thread(control_task,(to_control,to_arduino,[to_pc,to_android],))
-    # # keep main thread alive
-    # while 1:
-    #     pass
+    controller = CentralController(input_q=to_control,cmd_out_q=to_arduino,data_out_qs=[to_pc,to_android])
+    controller.control_task()
 
 
 

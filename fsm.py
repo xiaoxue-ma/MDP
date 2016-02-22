@@ -2,11 +2,16 @@
 module for implementing Finite State Machine
 """
 from abc import ABCMeta,abstractmethod
+import time
+from thread import start_new_thread
 from common import *
-from common import pmessage
+from common.timer import Timer
 from common.pmessage import PMessage
 
 class StateMachine():
+    """
+    Interface specification for State Machine
+    """
     @abstractmethod
     def set_next_state(self,state_name):
         raise NotImplementedError()
@@ -31,6 +36,12 @@ class StateMachine():
     @abstractmethod
     def reset(self):
         raise NotImplementedError()
+    @abstractmethod
+    def set_exploration_time_limit(self,time_limit):
+        raise NotImplementedError()
+    @abstractmethod
+    def set_exploration_coverage(self,coverage_percent):
+        raise  NotImplementedError()
 
 class BaseState():
 
@@ -71,6 +82,20 @@ class ReadyState(BaseState):
                 self._machine.load_map_from_file("D:/map.txt")
                 self._machine.set_next_state(ExplorationDoneState(machine=self._machine))
                 print("loaded map from file")
+        elif(msg.get_type()==PMessage.T_SET_EXPLORE_TIME_LIMIT):
+            try:
+                limit = int(msg.get_msg())
+                self._machine.set_exploration_time_limit(limit)
+                return [],[]
+            except:
+                print("fail to set exploration time limit")
+        elif(msg.get_type()==PMessage.T_SET_EXPLORE_COVERAGE):
+            try:
+                coverage = int(msg.get_msg())
+                self._machine.set_exploration_coverage(coverage)
+                return [],[]
+            except:
+                print("fail to set exploration coverage")
         print("input {} is not valid".format(input_tuple))
         return [],[]
 
@@ -79,11 +104,23 @@ class ExplorationState(BaseState):
     """
     only accept sensor readings from arduino
     """
+    timer = None
+
     def __str__(self):
         return "ExplorationState"
 
     def process_input(self,input_tuple):
         type,msg = input_tuple
+        # run timer if needed
+        if (not self.timer):
+            time_limit = self._machine.get_exploration_time_limit()
+            if (time_limit):
+                self.timer = Timer(limit=time_limit,end_callback=self.time_up,interval_callback=self.time_tick)
+                self.timer.start()
+        # check coverage if needed
+        coverage_limit = self._machine.get_exploration_coverage_limit()
+        current_coverage = self._machine.get_current_exploration_coverage()
+        coverage_msg = PMessage(type=PMessage.T_CUR_EXPLORE_COVERAGE,msg=current_coverage)
         if (type!=ARDUINO_LABEL):
             return [],[]
         # update internal map
@@ -92,12 +129,29 @@ class ExplorationState(BaseState):
         # check whether exploration is finished
         if (self._machine.is_map_fully_explored()):
             self._machine.set_next_state(ExplorationDoneState(machine=self._machine))
-            return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_END_EXPLORE)],[PMessage(type=PMessage.T_MAP_UPDATE,msg=msg.get_msg())]
-        # get next move
-        command = self._machine.get_next_exploration_move()
-        self._machine.move_robot(command)
-        return [PMessage(type=PMessage.T_COMMAND,msg=command)],\
-               [PMessage(type=PMessage.T_MAP_UPDATE,msg=msg.get_msg()),PMessage(type=PMessage.T_ROBOT_MOVE,msg=command)]
+            return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_END_EXPLORE)],\
+                   [PMessage(type=PMessage.T_MAP_UPDATE,msg=msg.get_msg()),coverage_msg]
+
+        if (coverage_limit and current_coverage>=coverage_limit):
+            # already reach coverage limit, terminate exploration
+            self._machine.set_next_state(ExplorationDoneState(machine=self._machine))
+            return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_END_EXPLORE)],\
+                    [PMessage(type=PMessage.T_MAP_UPDATE,msg=msg.get_msg()),coverage_msg]
+        else:
+            # get next move
+            command = self._machine.get_next_exploration_move()
+            self._machine.move_robot(command)
+            return [PMessage(type=PMessage.T_COMMAND,msg=command)],\
+                   [PMessage(type=PMessage.T_MAP_UPDATE,msg=msg.get_msg()),PMessage(type=PMessage.T_ROBOT_MOVE,msg=command),coverage_msg]
+
+    def time_up(self):
+        "action when time for exploration is up"
+        print("Time for exploration is up")
+        self._machine.update_remaining_explore_time(0)
+        self._machine.set_next_state(ExplorationDoneState(machine=self._machine))
+
+    def time_tick(self,time_remained):
+        self._machine.update_remaining_explore_time(time_remained)
 
 
 class ExplorationDoneState(BaseState):
@@ -117,6 +171,15 @@ class ExplorationDoneState(BaseState):
             reply_commands.extend([PMessage(type=PMessage.T_COMMAND,msg=cmd) for cmd in cmd_list])
             return reply_commands,\
                    [PMessage(type=PMessage.T_STATE_CHANGE,msg=msg.get_msg())]
+
+        elif (type==ANDROID_LABEL and msg.get_msg()==PMessage.M_RESET):
+            self._machine.reset()
+            self._machine.set_next_state(ReadyState(machine=self._machine))
+            return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_RESET)],[PMessage(type=PMessage.T_STATE_CHANGE,msg=PMessage.M_RESET)]
+        elif (type==ANDROID_LABEL and msg.get_type()==PMessage.T_COMMAND and msg.get_msg() in PMessage.M_MOVE_INSTRUCTIONS):
+            # simple robot move
+            self._machine.move_robot(msg.get_msg())
+            return [msg],[PMessage(type=PMessage.T_ROBOT_MOVE,msg=msg.get_msg())]
         else:
             return [],[]
 
@@ -153,5 +216,6 @@ class EndState(BaseState):
         if (type==ANDROID_LABEL and msg.get_msg()==PMessage.M_RESET):
             self._machine.reset()
             self._machine.set_next_state(ReadyState(machine=self._machine))
+            return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_RESET)],[PMessage(type=PMessage.T_STATE_CHANGE,msg=PMessage.M_RESET)]
         else:
             return [],[]

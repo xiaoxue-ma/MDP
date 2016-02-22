@@ -4,7 +4,7 @@ constants to be used in all programs in the package
 
 # for server communication
 MOCK_SERVER_ADDR = "localhost"
-ANDROID_SERVER_PORT = 9000
+ANDROID_SERVER_PORT = 9000 # server port on Rpi to serve Android
 ARDUINO_SERVER_PORT = 9010
 PC_SERVER_PORT = 9020
 

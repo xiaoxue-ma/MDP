@@ -1,25 +1,23 @@
-from Tkinter import *
 from thread import start_new_thread
 import socket
 import time
 
-from common import *
-from common.pmessage import PMessage
-from simulators.robot import *
+from common.robot import *
 from common.amap import *
+from common.network import *
 
 
 class AppSettings():
     """
     settings for ArduinoSimulation
     """
-    SENSOR_DATA_DELAY = 0.5
+    SENSOR_DATA_DELAY = 0.3
     TEXTBOX_HEIGHT = 5
     MAP_FILE_NAME = "map.txt"
     ROBOT_ORI_LABEL = "Robot Orientation: {}"
     ROBOT_POS_LABEL = "Robot position: {},{}"
     VALID_CELL_VALUE = MapRef.VALID_CELL_VALUES
-    VALID_INSTRUCTIONS = [PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT,PMessage.M_TURN_RIGHT,PMessage.M_START_EXPLORE,PMessage.M_START_FASTRUN]
+    VALID_INSTRUCTIONS = [PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT,PMessage.M_TURN_RIGHT,PMessage.M_START_EXPLORE,PMessage.M_START_FASTRUN,PMessage.M_RESET]
 
 class ArduinoSimulationApp(BaseObserver,AppSettings):
     # robot info
@@ -34,7 +32,7 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
     _send_data_btn = None
     _map_frame = None
     # connection with rpi
-    _connection = None
+    _client = None
     _sending_sensor_data = False
     _sending_move_ack = False
 
@@ -59,8 +57,10 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
         info_frame = Frame(master=root)
         self.init_info_elements(root=info_frame)
         info_frame.grid(row=1,column=0)
+        # init client connection
+        self._client = SocketClient(server_addr=MOCK_SERVER_ADDR,server_port=ARDUINO_SERVER_PORT)
         # start server
-        start_new_thread(self.start_server,())
+        start_new_thread(self.start_session,())
 
     def init_info_elements(self,root):
         self._label_orientation = Label(master=root,text="...")
@@ -75,28 +75,18 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
         "send sensor reading to client"
         readings = self._robot.get_sensor_readings(self._map_ref)
         self.show_status(str(readings))
-        self.send_data(con=self._connection,type=PMessage.T_MAP_UPDATE,
+        self.send_data(con=self._client,type=PMessage.T_MAP_UPDATE,
                        data=",".join([str(i) for i in readings]))
         self.show_status("Readings sent")
 
-    def start_server(self):
-        # set up server socket
-        time.sleep(1)
-        sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        server_address = (MOCK_SERVER_ADDR,ARDUINO_SERVER_PORT)
-        sock.bind(server_address)
-        self.show_status("server started at {},{}".format(MOCK_SERVER_ADDR,ARDUINO_SERVER_PORT))
-        # listening for connections
-        sock.listen(1)
-        connection,client_addr = sock.accept()
-        self._connection = connection
-        self.show_status("accept client: " + str(client_addr))
-        self.serve_connection(connection)
+    def start_session(self):
+        self._client.start()
+        self.serve_connection(self._client)
 
     def serve_connection(self,conn):
         "get instructions from Rpi and execute"
         while True:
-            msg =conn.recv(1024)
+            msg =conn.read()
             if (msg):
                 objs = PMessage.load_messages_from_json(msg)
                 if (not objs): continue
@@ -130,6 +120,13 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
         elif(instruct==PMessage.M_START_EXPLORE):self._sending_sensor_data=True
         elif (instruct==PMessage.M_END_EXPLORE): self._sending_sensor_data = False
         elif(instruct==PMessage.M_START_FASTRUN): self._sending_move_ack=True
+        elif(instruct==PMessage.M_RESET):self.reset()
+
+    def reset(self):
+        self._sending_sensor_data = False
+        self._sending_move_ack = False
+        self._map_ref.load_map_from_file(self.MAP_FILE_NAME)
+        self._robot.reset()
 
     def show_status(self,msg):
         self._text_status.insert(END,msg+"\n")
@@ -142,8 +139,9 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
         self._label_orientation.config(text=self.ROBOT_ORI_LABEL.format(ori.get_name()))
 
     def send_data(self,con,type,data):
+        "con is SocketClient object"
         msg = PMessage(type=type,msg=data)
-        con.sendall(str(msg))
+        con.write(str(msg))
 
 def main():
     window = Tk()

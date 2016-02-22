@@ -18,14 +18,12 @@ class MockPCInterface(Interface):
 class MockAndroidInterface(Interface):
 
     _name = ANDROID_LABEL
-
-    def _get_server_port(self):
-        return ANDROID_SERVER_PORT
+    _server_ip =MOCK_SERVER_ADDR
+    _server_port = ANDROID_SERVER_PORT
 
 
 class MockArduinoInterface(Interface):
 
     _name = ARDUINO_LABEL
-
-    def _get_server_port(self):
-        return ARDUINO_SERVER_PORT
+    _server_ip =MOCK_SERVER_ADDR
+    _server_port = ARDUINO_SERVER_PORT

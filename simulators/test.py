@@ -2,16 +2,13 @@
 test client side
 """
 
-from Tkinter import *
 import socket
 from thread import start_new_thread
 import time
 
-from common import *
 from algorithms.maze_explore import MazeExploreAlgo
 from algorithms.shortest_path import AStarShortestPathAlgo
-from common.amap import *
-from simulators.robot import *
+from common.robot import *
 
 
 class ClientSimulationApp():
