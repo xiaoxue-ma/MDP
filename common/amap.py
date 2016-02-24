@@ -1,14 +1,18 @@
+import os
+import re
 from Tkinter import *
+from abc import ABCMeta,abstractmethod
+from bitarray import bitarray
 
 from common import *
 from common.popattern import *
 
-class MapRef(BasePublisher):
-    """
-    internal representation of the arena map
-    """
+class MapSetting():
+    # map settings
     DEFAULT_MAP_SIZE_X = 15
     DEFAULT_MAP_SIZE_Y = 20
+    DEFAULT_START_POS = (1,18)
+    DEFAULT_END_POS = (13,1)
 
     # possible values of the each cell
     CLEAR = 0
@@ -20,12 +24,147 @@ class MapRef(BasePublisher):
     DEFAULT_CELL_VALUE = UNKNOWN
     VALID_CELL_VALUES = [CLEAR,OBSTACLE,UNKNOWN,START_ZONE,END_ZONE]
     START_ZONE_INDICES = [(x,y) for x in range(3) for y in range(3)]
+    # default directory to store map descriptors
+    # see MapRef
+    MAP_FILE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)),'simulators/mapfiles')
 
+class BaseMapIOMixin():
+    """
+    class for loading and saving map to file
+    """
+    __metaclass__ = ABCMeta
+
+    def _get_abs_file_name(self,filename):
+        "convert to abs path if it's not"
+        abs_path_pattern =re.compile('[A-Z]:/')
+        if (abs_path_pattern.findall(filename)):
+            return filename
+        else:
+            return os.path.join(MapSetting.MAP_FILE_DIR,filename)
+
+    def load_map(self,filename):
+        "return a 2D array representing the map"
+        return self._load_map_file(self._get_abs_file_name(filename))
+
+    @abstractmethod
+    def _load_map_file(self,filename):
+        "return a 2D array representing the map"
+        return []
+
+    def save_map(self,filename,td_array):
+        "td_array is the internal map representation, return None, may raise IOException"
+        self._save_map_file(self._get_abs_file_name(filename),td_array=td_array)
+
+    @abstractmethod
+    def _save_map_file(self,filename,td_array):
+        "td_array is the internal map representation, return None, may raise IOException"
+        pass
+
+
+class TextMapIOMixin(BaseMapIOMixin):
+    """
+    Read and write map as text file
+    """
+    def _load_map_file(self,filename):
+        ROW_LEN = 15
+        with open(filename,"r") as f:
+            content = f.read()
+        ls = [int(i) for i in content if i.isdigit()]
+        return [ls[15*i:15*(i+1)] for i in range(len(ls)/ROW_LEN)]
+
+    def _save_map_file(self,filename,td_array):
+        with open(filename,'w') as f:
+            f.write(
+                ''.join(str(td_array[y][x])
+                        for y in range(len(td_array))
+                        for x in range(len(td_array[0])))
+            )
+
+class BitMapIOMixin(BaseMapIOMixin):
+    """
+    Save map in binary format
+    """
+    bit_unknown = 0
+    bit_explored = 1
+    bit_clear = 0
+    bit_obstacle = 1
+
+    def to_hex(self,x):
+        "take in a bytes str and return a str in hex"
+        return "".join("{:02X}".format(ord(c)) for c in x)
+
+    def _load_map_file(self,filename):
+        #TODO: so far this is hardcoded, only read 15*20 map
+        with open(filename,"rb") as f:
+            content = f.read()
+        arr = bitarray()
+        arr.frombytes(content)
+        print("Map loaded: {}".format(self.to_hex(arr.tobytes())))
+        explored = arr[2:302] # explored or unknown
+        cleared = arr[304:] # cleared or obstacle
+        # load into a 2d array
+        ls = [[None for _ in range(15) ] for __ in range(20)]
+        cleared_cur_index = 0
+        for i in range(len(explored)):
+            x = i%15
+            y = i/15
+            if (explored[i]==self.bit_unknown):
+                ls[y][x] = MapSetting.UNKNOWN
+            else: # explored
+                if (cleared[cleared_cur_index]==self.bit_clear):
+                    ls[y][x] = MapSetting.CLEAR
+                else:#obstacle
+                    ls[y][x] = MapSetting.OBSTACLE
+                cleared_cur_index += 1
+        if (any([True if ls[y][x]==None else False
+                 for y in range(20) for x in range(15)])):
+            raise Exception("The map data is not complete")
+        return ls
+
+    def _save_map_file(self,filename,td_array):
+        explored_ls = [] # record explored or unknown
+        cleared_ls = [] # record clear or obstacle
+        explored_ls.extend([1,1]) # prefix
+        for y in range(len(td_array)):
+            for x in range(len(td_array[0])):
+                if td_array[y][x]==MapSetting.UNKNOWN:
+                    explored_ls.append(self.bit_unknown)
+                else:# explored
+                    explored_ls.append(self.bit_explored)
+                    if (td_array[y][x]==MapSetting.OBSTACLE):
+                        cleared_ls.append(self.bit_obstacle)
+                    else:
+                        cleared_ls.append(self.bit_clear)
+        explored_ls.extend([1,1]) # postfix
+        # concatenate the two lists
+        result_ls = self._pad_zero_right(explored_ls+cleared_ls)
+        arr = bitarray([result_ls[i]==1 for i in range(len(result_ls))])
+        print("Map saved: {}".format(self.to_hex(arr.tobytes())))
+        # write the binary string to file
+        with open(filename,'wb') as f:
+            f.write(arr.tobytes())
+
+    def _pad_zero_right(self,ls):
+        "pad zero to the list so that the length is a power of 2"
+        import math
+        power = int(
+            math.ceil(math.log(len(ls),2))
+        )
+        num_zeros = 2**power - len(ls)
+        ls.extend([0]*num_zeros)
+        return ls
+
+class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
+    """
+    internal representation of the arena map
+    """
+
+    # map data
     _map_ref = [] # 2D matrix
     size_x = 0
     size_y = 0
-    _start_zone_centre_pos = (1,18)
-    _end_zone_centre_pos = (13,1)
+    _start_zone_centre_pos = ()
+    _end_zone_centre_pos = ()
 
     _listeners = [] # list of observers
 
@@ -33,6 +172,8 @@ class MapRef(BasePublisher):
         self.reset(x,y,default)
 
     def reset(self,x=None,y=None,default=None):
+        self._start_zone_centre_pos=self.DEFAULT_START_POS
+        self._end_zone_centre_pos = self.DEFAULT_END_POS
         if (x and y and default):
             self._map_ref = [[default for _ in range(x)] for __ in range(y)]
         else:
@@ -72,14 +213,12 @@ class MapRef(BasePublisher):
         return [(x,y) for x in range(self.size_x) for y in range(self.size_y) if x==0 or x==self.size_x-1 or y==0 or y==self.size_y-1]
 
     def load_map_from_file(self,file_name):
-        f = open(file_name,mode="r")
-        lines = f.readlines()
-        map_2d = [] # list of list
-        for line in lines:
-            map_2d.append([int(i) for i in line if i.isdigit() and int(i) in self.VALID_CELL_VALUES])
-        self._map_ref = map_2d
+        self._map_ref=self.load_map(file_name)
         self._update_size()
         self.notify()
+
+    def save_map_to_file(self,filename):
+        self.save_map(filename,td_array=self._map_ref)
 
     def _update_size(self):
         self.size_x = len(self._map_ref[0])
@@ -154,3 +293,4 @@ class MapUI(BaseObserver):
     # observer method
     def update(self):
         self.paint()
+

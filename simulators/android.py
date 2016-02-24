@@ -2,8 +2,6 @@
 test android client side
 """
 
-import socket
-from thread import start_new_thread
 import time
 
 from algorithms.maze_explore import MazeExploreAlgo
@@ -24,66 +22,96 @@ class ClientSimulationApp():
     _explore_algo = None
 
     _map_ui = None
-    _map_ref = [] #internal 2D representation of map
+    _map_ref = None #internal 2D representation of map
     _robot = None
 
     _client = None # SocketClient
 
     def __init__(self,root):
         # status text boxes
-        self._text = Text(master=root,height=6)
-        self._text.grid(row=0,column=0)
+        self._info_frame =  Frame(master=root)
+        self._info_frame.grid(row=0,column=0)
+        self._init_info_frame(fr=self._info_frame)
         # buttons
         self._button_frame = Frame(master=root)
         self._button_frame.grid(row=1,column=0)
-        self._mv_btn = Button(master=self._button_frame,text="move forward",command=self.move_forward)
-        self._mv_btn.grid(row=0,column=0)
-        self._tl_btn = Button(master=self._button_frame,text="turn left",command=self.turn_left)
-        self._tl_btn.grid(row=0,column=1)
-        self._tr_btn = Button(master=self._button_frame,text="turn right",command=self.turn_right)
-        self._tr_btn.grid(row=0,column=2)
-        self._fastrun_btn = Button(master=self._button_frame,text="fast run",command=self.start_fast_run)
-        self._fastrun_btn.grid(row=0,column=3)
-        self._explore_btn = Button(master=self._button_frame,text="explore",command=self.start_exploration)
-        self._explore_btn.grid(row=0,column=4)
-        self._reset_btn = Button(master=self._button_frame,text="reset",command=self.reset)
-        self._reset_btn.grid(row=0,column=5)
-        #TODO: remove this in production
-        self._jump_explore_btn = Button(master=self._button_frame,text="jump explore",command=self.jump_explore)
-        self._jump_explore_btn.grid(row=0,column=6)
+        self._init_btn_frame(fr=self._button_frame)
         # gui for set exploration time limit
-        self._set_explore_time_limit_btn = Button(master=self._button_frame,text="set explore time limit",command=self.set_explore_time_limit)
-        self._set_explore_time_limit_text = Text(master=self._button_frame,width=10,height=1)
-        self._set_explore_time_limit_btn.grid(row=1,column=0)
-        self._set_explore_time_limit_text.grid(row=1,column=1)
-        # gui for set exploration coverage limit
-        self._set_explore_coverage_limit_btn = Button(master=self._button_frame,text="set explore coverage limit",command=self.set_explore_coverage_limit)
-        self._set_explore_coverage_limit_text = Text(master=self._button_frame,width=10,height=1)
-        self._set_explore_coverage_limit_btn.grid(row=1,column=2)
-        self._set_explore_coverage_limit_text.grid(row=1,column=3)
-        # gui for displaying status
-        self._explore_time_remain_label = Label(master=self._button_frame,text="Exploration time remaining:")
-        self._explore_coverage_label = Label(master=self._button_frame,text="Coverage:")
-        self._explore_time_remain_label.grid(row=2,column=0)
-        self._explore_coverage_label.grid(row=2,column=1)
+        self._limit_frame =  Frame(master=root)
+        self._limit_frame.grid(row=2,column=0)
+        self._init_limit_frame(fr=self._limit_frame)
+        # load and save map
+        self._io_frame =  Frame(master=root)
+        self._io_frame.grid(row=3,column=0)
+        self._init_io_frame(fr=self._io_frame)
         # init map
-        self._map_ref = MapRef()
-        self._map_ref.load_map_from_file("zone.txt")
         self._map_frame = Frame(master=root)
-        self._map_ui = MapUI(frame=self._map_frame,map_ref=self._map_ref)
         self._map_frame.grid(row=4,column=0)
-        # init robot
-        self._robot = RobotRef()
-        self._robotUI = RobotUI(robot=self._robot,cells=self._map_ui.get_cells())
-        # paint map
-        self._map_ui.paint()
-        # paint robot
-        self._robot.refresh()
+        self._init_map_frame(fr=self._map_frame)
         # init algo
         self._explore_algo = MazeExploreAlgo(robot=self._robot,map_ref=self._map_ref)
         # start server
         self._client = SocketClient(server_addr=MOCK_SERVER_ADDR,server_port=ANDROID_SERVER_PORT)
         start_new_thread(self.start_session,())
+
+    def _init_info_frame(self,fr):
+        self._text = Text(master=fr,height=6)
+        self._text.grid(row=0,column=0,columnspan=2)
+        self._cur_info = Label(master=fr,bg="yellow",text="welcome")
+        self._cur_info.grid(row=1,column=0,columnspan=2)
+        # gui for displaying status
+        self._explore_time_remain_label = Label(master=fr,text="Exploration time remaining:")
+        self._explore_coverage_label = Label(master=fr,text="Coverage:")
+        self._explore_time_remain_label.grid(row=2,column=0,columnspan=1)
+        self._explore_coverage_label.grid(row=2,column=1,columnspan=2)
+
+    def _init_btn_frame(self,fr):
+        self._mv_btn = Button(master=fr,text="move forward",command=self.move_forward)
+        self._mv_btn.grid(row=0,column=0)
+        self._tl_btn = Button(master=fr,text="turn left",command=self.turn_left)
+        self._tl_btn.grid(row=0,column=1)
+        self._tr_btn = Button(master=fr,text="turn right",command=self.turn_right)
+        self._tr_btn.grid(row=0,column=2)
+        self._fastrun_btn = Button(master=fr,text="fast run",command=self.start_fast_run)
+        self._fastrun_btn.grid(row=0,column=3)
+        self._explore_btn = Button(master=fr,text="explore",command=self.start_exploration)
+        self._explore_btn.grid(row=0,column=4)
+        self._reset_btn = Button(master=fr,text="reset",command=self.reset)
+        self._reset_btn.grid(row=0,column=5)
+
+    def _init_limit_frame(self,fr):
+        self._set_explore_time_limit_btn = Button(master=fr,text="set explore time limit",command=self.set_explore_time_limit)
+        self._set_explore_time_limit_text = Text(master=fr,width=10,height=1)
+        self._set_explore_time_limit_btn.grid(row=0,column=0)
+        self._set_explore_time_limit_text.grid(row=0,column=1)
+        # gui for set exploration coverage limit
+        self._set_explore_coverage_limit_btn = Button(master=fr,text="set explore coverage limit",command=self.set_explore_coverage_limit)
+        self._set_explore_coverage_limit_text = Text(master=fr,width=10,height=1)
+        self._set_explore_coverage_limit_btn.grid(row=0,column=2)
+        self._set_explore_coverage_limit_text.grid(row=0,column=3)
+
+    def _init_io_frame(self,fr):
+        self._load_map_btn = Button(master=fr,text="load map",command=self.load_map)
+        self._load_map_btn.grid(row=0,column=0)
+        self._load_map_text = Text(master=fr,height=1,width=10)
+        self._load_map_text.grid(row=0,column=1)
+        self._save_map_btn = Button(master=fr,text="save map",command=self.save_map)
+        self._save_map_btn.grid(row=0,column=2)
+        self._save_map_text = Text(master=fr,height=1,width=10)
+        self._save_map_text.grid(row=0,column=3)
+
+    def _init_map_frame(self,fr):
+        self._map_ref = MapRef()
+        self._map_ui = MapUI(frame=fr,map_ref=self._map_ref)
+        # init robot
+        self._robot = RobotRef()
+        self._robotUI = RobotUI(robot=self._robot,cells=self._map_ui.get_cells())
+        #self._map_ref.add_change_listener(self._robotUI)
+        # set robot occupied positions to clear
+        self._map_ref.set_cell_list(pos_list=self._robot.get_occupied_postions(),
+                                    value=MapSetting.CLEAR)
+        # paint robot
+        self._robot.refresh()
 
     def set_explore_coverage_limit(self):
         coverage = int(self._set_explore_coverage_limit_text.get("1.0",END))
@@ -94,6 +122,17 @@ class ClientSimulationApp():
         self._explore_time_limit = time_limit
         self.send_data(con=self._client,type=PMessage.T_SET_EXPLORE_TIME_LIMIT,data=time_limit)
 
+    def load_map(self):
+        map_file_path = self._load_map_text.get("1.0",END)[:-1]
+        self._map_ref.load_map_from_file(map_file_path)
+        self._robot.refresh()
+        print("map loaded")
+        self.send_data(con=self._client,type=PMessage.T_LOAD_MAP,data=map_file_path)
+
+    def save_map(self):
+        map_file_path = self._save_map_text.get("1.0",END)[:-1]
+        self._map_ref.save_map_to_file(map_file_path)
+        self.show_status("Map saved")
 
     def start_fast_run(self):
         # compute run commands
@@ -178,7 +217,7 @@ class ClientSimulationApp():
 
     def show_status(self,msg):
         self._text.insert(END,msg+"\n")
-
+        self._cur_info.config(text=msg)
 
     def send_data(self,con,type,data):
         "con is a SocketClient object"

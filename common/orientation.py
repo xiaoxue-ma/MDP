@@ -92,6 +92,10 @@ class RelativeOrientation(Orientation):
         return self.ORI_VERBOSE[self._val]
 
 
+#TODO: move this to another module
+def sum_coordinate(c1,c2):
+    return tuple(sum(x) for x in zip(c1, c2))
+
 # absolute orientations
 NORTH = AbsoluteOrientation(1)
 EAST = AbsoluteOrientation(3)

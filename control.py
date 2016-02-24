@@ -9,7 +9,9 @@ from algorithms.shortest_path import *
 
 
 class CentralController(StateMachine):
-
+    """
+    run control_task method to start running the controller
+    """
     _cur_state = None
     _next_state = None
 
@@ -81,6 +83,9 @@ class CentralController(StateMachine):
 
     def get_current_exploration_coverage(self):
         return 100 - self._map_ref.get_unknown_percentage()
+
+    def load_map_from_file(self,filename):
+        self._map_ref.load_map_from_file(filename)
 
     def reset(self):
         self._cur_state = ReadyState(machine=self)

@@ -49,14 +49,12 @@ class AStarShortestPathAlgo():
                     n.set_g(new_g)
                     n.ori = AbsoluteOrientation.get_ori_at_dest(start_pos=(cur_node.x,cur_node.y),dest_pos=(n.x,n.y))
                     node_q.enqueue(n)
-        self.print_route(dest_node=dest_node,
-                         start_node=start_node)
         print("number of iterations for finding shortest path: {}".format(num_iterations))
         # return list of commands
         return self.get_command_list(start_node=start_node,end_node=dest_node)
 
     def _get_inaccessible_pos_list(self,map_ref):
-        "pos where robot will collide with obstacles"
+        "pos where robot will collide with obstacles or the wall"
         pos_list = []
         # 1 all obstacle positions and surrounding positions
         for y in range(map_ref.get_size_y()):

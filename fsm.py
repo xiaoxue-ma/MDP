@@ -96,6 +96,11 @@ class ReadyState(BaseState):
                 return [],[]
             except:
                 print("fail to set exploration coverage")
+        #TODO: load map from file, for simulation only
+        elif(msg.get_type()==PMessage.T_LOAD_MAP):
+            path = msg.get_msg()
+            self._machine.load_map_from_file(path)
+            return [],[]
         print("input {} is not valid".format(input_tuple))
         return [],[]
 

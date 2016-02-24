@@ -120,8 +120,16 @@ class RobotRef(RobotSettings,BasePublisher):
         return self._ori
 
     def get_position(self):
+        "return the centre position of the robot"
         return self._pos
 
+    def get_occupied_postions(self):
+        "return a list of pos that the robot occupies, hard coded for 3*3"
+        x,y=self._pos
+        return [(x+i,y+j) for i in range(-1,2) for j in range(-1,2)]
+
+    def get_head_position(self):
+        return sum_coordinate(self._pos,self._ori.to_pos_change())
 
 class RobotUI(RobotSettings,BaseObserver):
     """
@@ -139,15 +147,13 @@ class RobotUI(RobotSettings,BaseObserver):
 
     def paint_robot(self):
         "paint the robot shape on the cells given"
-        head_pos_dict = {NORTH.get_value():(0,-1),SOUTH.get_value():(0,1),EAST.get_value():(1,0),WEST.get_value():(-1,0)}
-        head_pos = head_pos_dict[self._robot.get_orientation().get_value()]
-        for i in range(-1,2):# horizontal
-            for j in range(-1,2):
-                x,y = self._robot.get_position()[0] + i,self._robot.get_position()[1] + j
-                if ((i,j)==head_pos):
-                    self._cells[y][x].config(bg=self.HEAD_COLOR)
-                else:
-                    self._cells[y][x].config(bg=self.BODY_COLOR)
+        body_pos_ls = self._robot.get_occupied_postions()
+        head_pos = self._robot.get_head_position()
+        for x,y in body_pos_ls:
+            if ((x,y)==head_pos):
+                self._cells[y][x].config(bg=self.HEAD_COLOR)
+            else:
+                self._cells[y][x].config(bg=self.BODY_COLOR)
 
     def update(self):
         self.paint_robot()

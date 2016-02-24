@@ -13,7 +13,7 @@ class AppSettings():
     """
     SENSOR_DATA_DELAY = 0.3
     TEXTBOX_HEIGHT = 5
-    MAP_FILE_NAME = "map.txt"
+    MAP_FILE_NAME = "map.bin"
     ROBOT_ORI_LABEL = "Robot Orientation: {}"
     ROBOT_POS_LABEL = "Robot position: {},{}"
     VALID_CELL_VALUE = MapRef.VALID_CELL_VALUES
@@ -46,8 +46,9 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
         self._map_ref.refresh()
         self._map_frame.grid(row=0,column=0)
         # init button
-        self._send_data_btn = Button(master=root,text="send sensor data",command=self.send_sensor_data)
-        self._send_data_btn.grid(row=2,column=0)
+        self._control_frame = Frame(master=root)
+        self._control_frame.grid(row=1,column=0)
+        self._init_control_frame(self._control_frame)
         # add this app as the listener of robot
         self._robot = RobotRef()
         self._robotUI = RobotUI(robot=self._robot,cells=self._map_ui.get_cells())
@@ -56,7 +57,7 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
         # init labels and text area
         info_frame = Frame(master=root)
         self.init_info_elements(root=info_frame)
-        info_frame.grid(row=1,column=0)
+        info_frame.grid(row=2,column=0)
         # init client connection
         self._client = SocketClient(server_addr=MOCK_SERVER_ADDR,server_port=ARDUINO_SERVER_PORT)
         # start server
@@ -70,6 +71,19 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
         self._text_status = Text(master=root,height=self.TEXTBOX_HEIGHT)
         self._text_status.grid(row=2,column=0)
         self.update()
+
+    def _init_control_frame(self,fr):
+        self._send_data_btn = Button(master=fr,text="send sensor data",command=self.send_sensor_data)
+        self._send_data_btn.grid(row=0,column=0)
+        self._load_map_btn = Button(master=fr,text="load map",command=self.load_map)
+        self._load_map_btn.grid(row=0,column=1)
+        self._load_map_text = Text(master=fr,height=1,width=10)
+        self._load_map_text.grid(row=0,column=2)
+
+    def load_map(self):
+        filename = self._load_map_text.get("1.0",END)[:-1]
+        self._map_ref.load_map_from_file(filename)
+        self._robot.refresh()
 
     def send_sensor_data(self):
         "send sensor reading to client"

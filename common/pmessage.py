@@ -15,6 +15,8 @@ class PMessage():
     T_SET_EXPLORE_COVERAGE = "setexplorecoverage" # msg for this should be a int
     T_EXPLORE_REMAINING_TIME = "exploreremainingtime" # msg for this should be a int
     T_CUR_EXPLORE_COVERAGE = "curexplorecoverage" # msg is int
+    #TODO: for simulation only
+    T_LOAD_MAP = "loadmap" # msg should be map path
 
     # for msg
     M_START_EXPLORE = "explore"
