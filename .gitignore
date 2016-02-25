@@ -2,3 +2,10 @@
 *.pyc
 algorithms/test.py
 venv
+
+#references
+MDP-Jan-2015/
+Robot-In-Maze/
+
+#rpi configs
+rpi_config/
