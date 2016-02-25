@@ -31,7 +31,7 @@ class Interface():
     def read(self):
         """return a label,Message tuple"""
         data = self._server.read()
-        if (data):
+        if data:
             print("Received data from {} : {}".format(self._name, data))
             try:
                 msg_obj = PMessage(json_str=data)

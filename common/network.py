@@ -4,9 +4,6 @@ import socket
 
 
 class BaseNetworkInterface():
-    def __init__(self):
-        pass
-
     __metaclass__ = ABCMeta
 
     _buffer = ''  # temporary storage for data received
