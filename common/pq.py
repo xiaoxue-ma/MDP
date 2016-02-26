@@ -3,7 +3,9 @@ Min queue to be used in A* algo
 """
 
 class MinQueue():
-
+    """
+    No duplicated allowed in the queue
+    """
     _list = []
     _key_func = None # function used to sort the list
 
@@ -11,7 +13,8 @@ class MinQueue():
         self._key_func = key
 
     def enqueue(self,item):
-        self._list.append(item)
+        if (not (item in self._list)):
+            self._list.append(item)
 
     def dequeue_min(self):
         self._list.sort(key=self._key_func)

@@ -10,7 +10,8 @@ class PMessage():
     T_STATE_CHANGE = "stchange"
     T_ROBOT_MOVE = "robotmove"
     T_MAP_UPDATE = "mapupdate"
-    T_SET_ROBOT_POS = "setrobotpos"
+    T_SET_ROBOT_POS = "setrobotpos" # msg should be like 1,2
+    T_SET_ROBOT_ORI = "setrobotori" # msg should be 'NORTH' or 'SOUTH' or 'EAST' or 'WEST'
     T_SET_EXPLORE_TIME_LIMIT = "setexploretime" # msg for this should be a int
     T_SET_EXPLORE_COVERAGE = "setexplorecoverage" # msg for this should be a int
     T_EXPLORE_REMAINING_TIME = "exploreremainingtime" # msg for this should be a int

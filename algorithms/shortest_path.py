@@ -7,7 +7,7 @@ class AStarShortestPathAlgo():
     # algo settings
     NON_ACCESS_H_VALUE = 1E6
     UNIT_TURN_COST = 1 # cost for every turn
-    END_ALGO_UPON_REACHING_DEST = True
+    END_ALGO_UPON_REACHING_DEST = False
 
     # algo data
     _nodes = [] # 2D list of nodes
@@ -59,7 +59,7 @@ class AStarShortestPathAlgo():
         # 1 all obstacle positions and surrounding positions
         for y in range(map_ref.get_size_y()):
             for x in range(map_ref.get_size_x()):
-                if (map_ref.get_cell(x,y)==MapRef.OBSTACLE):
+                if (map_ref.get_cell(x,y)==MapRef.OBSTACLE or map_ref.get_cell(x,y)==MapRef.UNKNOWN):
                     pos_list.extend(map_ref.get_surrounding_pos(x,y))
                     pos_list.append((x,y))
         # 2 near wall positions

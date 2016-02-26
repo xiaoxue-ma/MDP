@@ -78,10 +78,9 @@ class ReadyState(BaseState):
                 self._machine.move_robot(msg.get_msg())
                 return [msg],[PMessage(type=PMessage.T_ROBOT_MOVE,msg=msg.get_msg())]
             #TODO: remove this in production
-            elif(msg.get_msg()==PMessage.M_JUMP_EXPLORE):
-                self._machine.load_map_from_file("D:/map.txt")
+            elif(msg.get_msg()==PMessage.M_END_EXPLORE):
                 self._machine.set_next_state(ExplorationDoneState(machine=self._machine))
-                print("loaded map from file")
+                print("jumped to exploration done state")
         elif(msg.get_type()==PMessage.T_SET_EXPLORE_TIME_LIMIT):
             try:
                 limit = int(msg.get_msg())
@@ -101,6 +100,11 @@ class ReadyState(BaseState):
             path = msg.get_msg()
             self._machine.load_map_from_file(path)
             return [],[]
+        elif(msg.get_type()==PMessage.T_SET_ROBOT_POS):
+            x,y=msg.get_msg().split(",")
+            self._machine.set_robot_pos((int(x),int(y)))
+            # TODO: this is only for simulation
+            return [PMessage(type=PMessage.T_SET_ROBOT_POS,msg=msg.get_msg())],[]
         print("input {} is not valid".format(input_tuple))
         return [],[]
 
@@ -126,6 +130,15 @@ class ExplorationState(BaseState):
         coverage_limit = self._machine.get_exploration_coverage_limit()
         current_coverage = self._machine.get_current_exploration_coverage()
         coverage_msg = PMessage(type=PMessage.T_CUR_EXPLORE_COVERAGE,msg=current_coverage)
+        # android "end explore" command
+        if (type==ANDROID_LABEL and msg.get_type()==PMessage.T_COMMAND and msg.get_msg()==PMessage.M_END_EXPLORE):
+            # stop timer and transit state
+            if (hasattr(self,"timer") and self.timer and self.timer.is_timing()):
+                self.timer.shutdown()
+            self._machine.set_next_state(ExplorationDoneState(machine=self._machine))
+            return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_END_EXPLORE)],\
+                   [coverage_msg]
+        # update from arduino
         if (type!=ARDUINO_LABEL):
             return [],[]
         # update internal map
@@ -145,6 +158,8 @@ class ExplorationState(BaseState):
         else:
             # get next move
             command = self._machine.get_next_exploration_move()
+            # command delay
+            time.sleep(self._machine.get_exploration_command_delay())
             self._machine.move_robot(command)
             return [PMessage(type=PMessage.T_COMMAND,msg=command)],\
                    [PMessage(type=PMessage.T_MAP_UPDATE,msg=msg.get_msg()),PMessage(type=PMessage.T_ROBOT_MOVE,msg=command),coverage_msg]
