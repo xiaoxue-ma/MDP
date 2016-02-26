@@ -26,8 +26,9 @@ class CentralController(StateMachine):
 
     _explore_time_limit = None  # integer
     _explore_coverage = None  # integer
+    _exploration_command_delay = 1
 
-    FAST_RUN_COMMAND_DELAY = 0.5  # in second
+    FAST_RUN_COMMAND_DELAY = 0.5 # in second
 
     def set_next_state(self, state):
         print("Next state set to {}".format(str(state)))
@@ -85,16 +86,24 @@ class CentralController(StateMachine):
     def get_current_exploration_coverage(self):
         return 100 - self._map_ref.get_unknown_percentage()
 
-    def load_map_from_file(self, filename):
+    def get_exploration_command_delay(self):
+        return self._exploration_command_delay
+
+    def load_map_from_file(self,filename):
         self._map_ref.load_map_from_file(filename)
+
+    def set_robot_pos(self,pos):
+        "pos should be a tuple"
+        self._robot.set_position(pos)
 
     def reset(self):
         self._cur_state = ReadyState(machine=self)
         self._next_state = self._cur_state
         self._map_ref = MapRef()
         self._robot = RobotRef()
-        self._explore_algo = MazeExploreAlgo(robot=self._robot, map_ref=self._map_ref)
-
+        self._explore_algo = MazeExploreAlgo(robot=self._robot,map_ref=self._map_ref)
+        self._explore_time_limit = None # integer
+        self._explore_coverage = None
 
     def __init__(self, input_q, cmd_out_q, data_out_qs):
         self._input_q = input_q

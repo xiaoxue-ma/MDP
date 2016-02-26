@@ -11,7 +11,7 @@ class AppSettings():
     """
     settings for ArduinoSimulation
     """
-    SENSOR_DATA_DELAY = 0.3
+    SENSOR_DATA_DELAY = 0
     TEXTBOX_HEIGHT = 5
     MAP_FILE_NAME = "map.bin"
     ROBOT_ORI_LABEL = "Robot Orientation: {}"
@@ -63,15 +63,18 @@ class ArduinoSimulationApp(BaseObserver, AppSettings):
         # init client connection
         self._client = SocketClient(server_addr=MOCK_SERVER_ADDR, server_port=ARDUINO_SERVER_PORT)
         # start server
-        start_new_thread(self.start_session, ())
+        start_new_thread(self.start_session,())
 
-    def init_info_elements(self, root):
-        self._label_orientation = Label(master=root, text="...")
-        self._label_orientation.grid(row=0, column=0)
-        self._label_position = Label(master=root, text="...")
-        self._label_position.grid(row=1, column=0)
-        self._text_status = Text(master=root, height=self.TEXTBOX_HEIGHT)
-        self._text_status.grid(row=2, column=0)
+    def init_info_elements(self,root):
+        self._label_orientation = Label(master=root,text="...")
+        self._label_orientation.grid(row=0,column=0)
+        self._label_position = Label(master=root,text="...")
+        self._label_position.grid(row=1,column=0)
+        self._text_status = Text(master=root,height=self.TEXTBOX_HEIGHT)
+        self._text_status.grid(row=2,column=0)
+        scrollb = Scrollbar(root, command=self._text_status.yview)
+        scrollb.grid(row=2, column=1, sticky='nsew')
+        self._text_status['yscrollcommand'] = scrollb.set
         self.update()
 
     def _init_control_frame(self, fr):
@@ -108,6 +111,12 @@ class ArduinoSimulationApp(BaseObserver, AppSettings):
                 if (not objs): continue
                 for msg_obj in objs:
                     print("received data: " + str(msg_obj))
+                    if (msg_obj.get_type()==PMessage.T_SET_ROBOT_POS):
+                        x,y=msg_obj.get_msg().split(",")
+                        self._map_ref.refresh()
+                        self._robot.set_position((int(x),int(y)))
+                        self.show_status("Robot position set to {},{}".format(x,y))
+                        continue
                     instruction = self.decode_instruction(msg_obj)
                     if (instruction):
                         self.execute_instruction(instruction)
@@ -119,11 +128,8 @@ class ArduinoSimulationApp(BaseObserver, AppSettings):
                     else:
                         self.show_status("Instruction cannot be decoded!")
 
-    def decode_instruction(self, msg):
-        """return the normal representation of instruction, None if cannot"""
-        instruct = msg.get_msg()
-        if instruct in self.VALID_INSTRUCTIONS:
-            return instruct
+    def decode_instruction(self,msg):
+        return msg.get_msg()
 
     def execute_instruction(self, instruct):
         """move the robot accordingly"""

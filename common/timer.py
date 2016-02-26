@@ -20,8 +20,8 @@ class Timer():
         start_new_thread(self._internal_run, ())
 
     def _internal_run(self):
-        t = self._time_limit
-        while (t > 0):
+        t= self._time_limit
+        while(t>0 and self._is_timing):
             if (self._interval_callback): self._interval_callback(t)
             time.sleep(self._interval)
             t -= 1
@@ -30,6 +30,9 @@ class Timer():
 
     def is_timing(self):
         return self._is_timing
+
+    def shutdown(self):
+        self._is_timing = False
 
 
 def timed_call(func, **kwargs):
