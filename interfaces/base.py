@@ -35,7 +35,7 @@ class Interface():
             print("Received data from {} : {}".format(self._name, data))
             try:
                 msg_obj = PMessage(json_str=data)
-                return (self._name, PMessage(json_str=data))
+                return self._name, PMessage(json_str=data)
             except:
                 pass
 
