@@ -53,5 +53,4 @@ def main():
     controller = CentralController(input_q=to_control, cmd_out_q=to_arduino, data_out_qs=[to_pc, to_android])
     controller.control_task()
 
-if __name__ == "__main__":
-    main()
+main()
