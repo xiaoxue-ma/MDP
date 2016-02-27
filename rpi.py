@@ -1,8 +1,3 @@
-"""
-This is the script to start running the system
-Run main() to start running
-"""
-
 from Queue import Queue
 import thread
 
