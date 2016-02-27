@@ -1,61 +1,118 @@
 """
 set of real device communication interfaces
 """
-import serial, time
+import socket
+import serial
 from bluetooth import *
 
-WIFI_IP = "192.168.2.2"
-WIFI_PORT = 3053
-BAUD = 115200
-SER_PORT0 = "/dev/ttyACM0"
-SER_PORT1 = "/dev/ttyACM1"
+WIFI_HOST = "192.168.1.1"
+WIFI_PORT = 50001
+SER_BAUD = 115200
+SER_PORT = "/dev/ttyACM0"
 N7_MAC = "08:60:6E:A5:A4:1E"
-UUID = "2016Grp1"
+BT_UUID = "2016Grp1"
 BT_PORT = 4
 
 
 class PCInterface(object):
-    pass
+    def __init__(self):
+        self.status = False
+
+    def connect(self):
+        try:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.bind((WIFI_HOST, WIFI_PORT))
+            self.socket.listen(1)
+            self.client_sock, self.client_addr = self.socket.accept()
+            print "WIFI--Connected to ", self.client_addr
+            self.status = True
+            # receive the first message from client, know the client address
+            #data, self.pcaddr = self.ipsock.recv(1024)
+        except Exception, e:
+            print "WIFI--connection exception: %s" % str(e)
+            self.status = False
+            self.reconnect()
+
+    def disconnect(self):
+        try:
+            self.socket.close()
+            self.status = False
+        except Exception, e:
+            print "WIFI--disconnection exception: %s" % str(e)
+
+    def reconnect(self):
+        if not self.status:
+            print "WIFI--reconnecting..."
+            self.disconnect()
+            self.connect()
+
+    def read(self):
+        try:
+            msg = self.client_sock.recv(1024)
+            print "WIFI--Read from PC: %s" % msg
+            return msg
+        except Exception, e:
+            print "WIFI--read exception: %s" % str(e)
+            self.reconnect()
+
+    def write(self, msg):
+        try:
+            self.client_sock.sendto(msg, self.client_addr)
+            print "WIFI--Write to PC: %s" % msg
+        except Exception, e:
+            print "WIFI--write exception: %s" % str(e)
+            self.reconnect()
 
 
 class ArduinoInterface(object):
     def __init__(self):
-        self.baudrate = BAUD
-        self.ser = 0
+        self.status = False
 
     def connect(self):
-        # connect to serial port
         try:
-            print "Trying to connect to Arduino..."
-            self.ser = serial.Serial(SER_PORT0, self.baudrate, timeout=3)
-            time.sleep(1)
-
-            if (self.ser != 0):
-                print "Connected to Arduino!"
-                self.read()
-                return 1
-
+            self.ser = serial.Serial(SER_PORT, SER_BAUD, timeout=3)
+            if self.ser is not None:
+                self.status = True
+                print "SER--Connected to Arduino!"
         except Exception, e:
-            self.ser = serial.Serial(SER_PORT1, self.baudrate, timeout=3)
-            return 1
+            print "SER--connection exception: %s" % str(e)
+            self.status = False
+            self.reconnect()
 
-    def write(self, msg):
-        try:
-            self.ser.write(msg + "|")  # write msg with | as end of msg
-        except Exception, e:
-            print "Arduino write exception: %s" % str(e)
+    def disconnect(self):
+        if self.ser.is_open:
+            self.ser.close()
+            self.status = False
+            print "SER--Disconnected to Arduino!"
+
+    def reconnect(self):
+        if not self.status:
+            print "SER--reconnecting..."
+            self.disconnect()
+            self.connect()
 
     def read(self):
         try:
-            msg = self.ser.readline()  # read msg from arduino sensors
-            return msg
+            msg = self.ser.readline()
+            if msg != "":
+                print "SER--Read from Arduino: %s" % msg
+                return msg
         except Exception, e:
-            print "Arduino read exception: %s" % str(e)
+            print "SER--read exception: %s" % str(e)
+            self.reconnect()
+
+    def write(self, msg):
+        try:
+            self.ser.write(msg + "|")
+            print "SER--Write to Arduino: %s" % msg
+        except Exception, e:
+            print "SER--write exception: %s" % str(e)
+            self.reconnect()
 
 
 class AndroidInterface(object):
     def __init__(self):
-        self._status = False
+        self.status = False
 
     def connect(self):
         try:
@@ -64,47 +121,38 @@ class AndroidInterface(object):
             self.server_sock.listen(2)
             port = self.server_sock.getsockname()[1]
             advertise_service(self.server_sock, "SampleServer",
-                              service_id=UUID,
-                              service_classes=[UUID, SERIAL_PORT_CLASS],
+                              service_id=BT_UUID,
+                              service_classes=[BT_UUID, SERIAL_PORT_CLASS],
                               profiles=[SERIAL_PORT_PROFILE],
-                              # protocols = [ OBEX_UUID ]
             )
             self.client_sock, client_info = self.server_sock.accept()
 
             if client_info[0] != N7_MAC:
                 print "BT--Unauthorized device, disconnecting..."
-                self._status = False
                 return
 
-            print("BT--Accepted connection from %s on channel %d" % str(client_info) % port)
-            self._status = True
+            print("BT--Connected to %s on channel %d" % str(client_info) % port)
+            self.status = True
 
         except Exception, e:
             print "BT--connection exception: %s" % str(e)
-            self._status = False
+            self.status = False
+            self.reconnect()
 
     def disconnect(self):
         try:
             self.client_sock.close()
             self.server_sock.close()
-            print("BT--Disconnected to Android")
+            self.status = False
+            print("BT--Disconnected to Android!")
         except Exception, e:
             print "BT--disconnection exception: %s" % str(e)
 
     def reconnect(self):
-        connected = self._status
-        while not connected:
+        if not self.status:
             print "BT--reconnecting..."
             self.disconnect()
             self.connect()
-
-    def write(self, msg):
-        try:
-            self.client_sock.send(msg)
-            print "BT--Write to Android: %s" % msg
-        except Exception, e:
-            print "BT--write exception: %s" % str(e)
-            self.reconnect()
 
     def read(self):
         try:
@@ -114,3 +162,12 @@ class AndroidInterface(object):
         except Exception, e:
             print "BT--read exception: %s" % str(e)
             self.reconnect()
+
+    def write(self, msg):
+        try:
+            self.client_sock.send(msg)
+            print "BT--Write to Android: %s" % msg
+        except Exception, e:
+            print "BT--write exception: %s" % str(e)
+            self.reconnect()
+
