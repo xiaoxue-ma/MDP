@@ -3,9 +3,9 @@ from interfaces.mock import MockAndroidInterface
 def main():
     interface = MockAndroidInterface()
     interface.connect()
-    while(True):
+    while True:
         data = interface.read()
-        if (data):
+        if data:
             print("received: " + str(data))
 
 main()

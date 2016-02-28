@@ -1,8 +1,3 @@
-"""
-This is the script to start running the system
-Run main() to start running
-"""
-
 from Queue import Queue
 import thread
 
@@ -53,4 +48,5 @@ def main():
     controller = CentralController(input_q=to_control, cmd_out_q=to_arduino, data_out_qs=[to_pc, to_android])
     controller.control_task()
 
-main()
+if __name__ == "__main__":
+    main()
