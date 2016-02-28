@@ -62,6 +62,7 @@ class SocketServer(BaseNetworkInterface):
         # listening for connections
         sock.listen(1)
         connection, self._client_addr = sock.accept()
+        print("COnnected to client {}".format(self._client_addr))
         self._connection = connection
 
     def _get_io(self):

@@ -5,13 +5,18 @@ import os
 import random
 import sys
 from common.amap import BitMapIOMixin,TextMapIOMixin,MapRef,MapSetting
+from common.network import SocketServer
 
 x_len = 15
 y_len = 20
 
+def test_network():
+    server=SocketServer(addr="172.22.164.11",port=9001)
+    server.start()
+
 def main():
     print(os.path.dirname(__file__))
-    convert_text_to_binary("map-2.txt")
+    convert_text_to_binary("map-5.txt")
 
 def test_random_map():
     map_io = BitMapIOMixin()
@@ -34,6 +39,7 @@ def convert_text_to_binary(filename):
     arr = text_io.load_map(filename)
     bin_file_name = filename.replace(".txt",".bin")
     bin_io = BitMapIOMixin()
+    bin_io.set_top_down(False)
     bin_io.save_map(bin_file_name,td_array=arr)
 
 def print_2d(arr):

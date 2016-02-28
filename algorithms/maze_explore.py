@@ -30,6 +30,8 @@ class MazeExploreAlgo():
                 self.action_precedence = self.PRECEDENCE_UPDATE_DICT[action][status]
                 # do this action
                 return action
+        # if no action can be done, then try going back
+        return PMessage.M_TURN_RIGHT
 
 
     def check_status(self,ori):

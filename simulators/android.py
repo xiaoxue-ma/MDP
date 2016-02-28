@@ -83,6 +83,11 @@ class ClientSimulationApp():
         self._reset_btn.grid(row=0,column=5)
         self._endexplore_btn = Button(master=fr,text="end explore",command=self.end_explore)
         self._endexplore_btn.grid(row=0,column=6)
+        self._set_speed_btn = Button(master=fr,text="set speed",command=self.set_explore_speed)
+        self._set_speed_btn.grid(row=0,column=7)
+        self._set_speed_text = Text(master=fr,width=10,height=1)
+        self._set_speed_text.grid(row=0,column=8)
+
 
     def _init_limit_frame(self,fr):
         self._set_explore_time_limit_btn = Button(master=fr,text="set explore time limit",command=self.set_explore_time_limit)
@@ -121,6 +126,12 @@ class ClientSimulationApp():
         coverage = int(self._set_explore_coverage_limit_text.get("1.0",END))
         self.send_data(con=self._client,type=PMessage.T_SET_EXPLORE_COVERAGE,data=coverage)
         self.show_status("Coverage limit set to {}".format(coverage))
+
+    def set_explore_speed(self):
+        num_steps_per_sec = int(self._set_speed_text.get("1.0",END)[:-1])
+        delay = int(10.0/num_steps_per_sec) / 10.0
+        self.show_status("Speed set to {} steps per second".format(num_steps_per_sec))
+        self.send_data(con=self._client,type=PMessage.T_SET_EXPLORE_SPEED,data=delay)
 
     def set_explore_time_limit(self):
         time_limit = int(self._set_explore_time_limit_text.get("1.0",END))
@@ -202,7 +213,7 @@ class ClientSimulationApp():
                         self._robot.refresh()
                     elif (msg_obj.get_type()==PMessage.T_STATE_CHANGE):
                         self.show_status("status changed to :{}".format(msg_obj.get_msg()))
-                    elif (msg_obj.get_type()==PMessage.T_ROBOT_MOVE):
+                    elif (msg_obj.get_type()==PMessage.T_ROBOT_MOVE and msg_obj.get_msg()):
                         self._map_ref.refresh()
                         self._robot.execute_command(msg_obj.get_msg())
                     elif(msg_obj.get_type()==PMessage.T_EXPLORE_REMAINING_TIME):

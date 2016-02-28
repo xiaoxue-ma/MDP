@@ -9,11 +9,11 @@ from common.network import *
 
 class AppSettings():
     """
-    settings for ArduinoSimulation
+    settings for Arduino Simulation
     """
     SENSOR_DATA_DELAY = 0
     TEXTBOX_HEIGHT = 5
-    MAP_FILE_NAME = "map.bin"
+    MAP_FILE_NAME = "map-1.bin"
     ROBOT_ORI_LABEL = "Robot Orientation: {}"
     ROBOT_POS_LABEL = "Robot position: {},{}"
     VALID_CELL_VALUE = MapRef.VALID_CELL_VALUES

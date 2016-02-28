@@ -51,6 +51,7 @@ class AStarShortestPathAlgo():
                     node_q.enqueue(n)
         print("number of iterations for finding shortest path: {}".format(num_iterations))
         # return list of commands
+        self.print_route(dest_node=dest_node,start_node=start_node)
         return self.get_command_list(start_node=start_node,end_node=dest_node)
 
     def _get_inaccessible_pos_list(self,map_ref):
@@ -76,9 +77,8 @@ class AStarShortestPathAlgo():
 
     def get_point_move_command(self,from_node,to_node):
         "return the list of commands, from_node and to_node should be neighbours"
-        action = AbsoluteOrientation.get_turn_action(start_ori=from_node.ori,end_ori=to_node.ori)
-        if (action): return [action,PMessage.M_MOVE_FORWARD]
-        else: return [PMessage.M_MOVE_FORWARD]
+        actions = AbsoluteOrientation.get_turn_actions(start_ori=from_node.ori,end_ori=to_node.ori)
+        return actions + [PMessage.M_MOVE_FORWARD]
 
     def print_route(self,dest_node,start_node):
         # terminating case

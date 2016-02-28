@@ -31,6 +31,25 @@ class CentralController(StateMachine):
 
     FAST_RUN_COMMAND_DELAY = 0.5 # in second
 
+    def control_task(self):
+        "central control"
+        # init robot
+        while True:
+            if (not self._input_q.empty()):
+                input_tuple = self._input_q.get_nowait()
+                if (not input_tuple): continue
+                self._cur_state = self._next_state
+                cmd_list,data_list = self._cur_state.process_input(input_tuple)
+                if (cmd_list):
+                    self._enqueue_list(self._cmd_out_q,cmd_list,True)
+                if (data_list):
+                    for q in self._data_out_qs:
+                        self._enqueue_list(q,data_list)
+
+    def set_exploration_command_delay(self,delay):
+        self._exploration_command_delay=delay
+        print("Exploration delay set to {} secs per step".format(delay))
+
     def set_next_state(self,state):
         print("Next state set to {}".format(str(state)))
         for q in self._data_out_qs:
@@ -71,6 +90,9 @@ class CentralController(StateMachine):
     def is_robot_at_destination(self):
         return self._robot.get_position()==self._map_ref.get_end_zone_center_pos()
 
+    def is_robot_at_start(self):
+        return self._robot.get_position()==self._map_ref.get_start_zone_center_pos()
+
     def set_exploration_time_limit(self,time_limit):
         self._explore_time_limit = int(time_limit)
 
@@ -88,6 +110,9 @@ class CentralController(StateMachine):
 
     def get_exploration_command_delay(self):
         return self._exploration_command_delay
+
+    def get_map_ref(self):
+        return self._map_ref
 
     def load_map_from_file(self,filename):
         self._map_ref.load_map_from_file(filename)
@@ -114,21 +139,6 @@ class CentralController(StateMachine):
     def update(self):
         pass
 
-    def control_task(self):
-        "central control"
-        # init robot
-        while True:
-            if (not self._input_q.empty()):
-                input_tuple = self._input_q.get_nowait()
-                if (not input_tuple): continue
-                self._cur_state = self._next_state
-                cmd_list,data_list = self._cur_state.process_input(input_tuple)
-                if (cmd_list):
-                    self._enqueue_list(self._cmd_out_q,cmd_list,True)
-                if (data_list):
-                    for q in self._data_out_qs:
-                        self._enqueue_list(q,data_list)
-
     def _enqueue_list(self,q,list,allow_delay=False):
         "enqueue list items on another thread"
         start_new_thread(self._enqueue_list_internal,(q,list,allow_delay,))
@@ -142,5 +152,8 @@ class CentralController(StateMachine):
                 q.put_nowait(item)
                 if (allow_delay): time.sleep(self.FAST_RUN_COMMAND_DELAY)
 
-    def load_map_from_file(self,file_name):
-        self._map_ref.load_map_from_file(file_name)
+    def get_robot_pos(self):
+        return self._robot.get_position()
+
+    def get_robot_ori(self):
+        return self._robot.get_orientation()

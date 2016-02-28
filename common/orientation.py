@@ -54,14 +54,17 @@ class AbsoluteOrientation(Orientation):
         return AbsoluteOrientation(new_val)
 
     @staticmethod
-    def get_turn_action(start_ori,end_ori):
-        "return the action to turn from start_ori to end_ori, None if no action needed"
+    def get_turn_actions(start_ori,end_ori):
+        "return the list of actions to turn from start_ori to end_ori, None if no action needed"
         if (end_ori.get_value()==(start_ori.get_value()+2)%8):
-            return PMessage.M_TURN_RIGHT
+            return [PMessage.M_TURN_RIGHT]
         elif(end_ori.get_value()==(start_ori.get_value()-2)%8):
-            return PMessage.M_TURN_LEFT
-        else: # no action needed
-            return None
+            return [PMessage.M_TURN_LEFT]
+        elif (end_ori.get_value()==(start_ori.get_value()+4)%8):
+            # turn 180 degrees
+            return [PMessage.M_TURN_RIGHT,PMessage.M_TURN_RIGHT]
+        else: # no need to turn
+            return []
 
     def get_name(self):
         "get verbose name"

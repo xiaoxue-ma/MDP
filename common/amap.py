@@ -89,6 +89,11 @@ class BitMapIOMixin(BaseMapIOMixin):
     bit_clear = 0
     bit_obstacle = 1
 
+    _is_top_down = False # whether the read/write the map from top to down
+
+    def set_top_down(self,is_top_down):
+        self._is_top_down = is_top_down
+
     def to_hex(self,x):
         "take in a bytes str and return a str in hex"
         return "".join("{:02X}".format(ord(c)) for c in x)
@@ -119,9 +124,13 @@ class BitMapIOMixin(BaseMapIOMixin):
         if (any([True if ls[y][x]==None else False
                  for y in range(20) for x in range(15)])):
             raise Exception("The map data is not complete")
+        if (not self._is_top_down):
+            ls = list(reversed(ls))
         return ls
 
     def _save_map_file(self,filename,td_array):
+        if (not self._is_top_down):
+            td_array = list(reversed(td_array))
         explored_ls = [] # record explored or unknown
         cleared_ls = [] # record clear or obstacle
         explored_ls.extend([1,1]) # prefix
@@ -178,7 +187,10 @@ class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
             self._map_ref = [[default for _ in range(x)] for __ in range(y)]
         else:
             self._map_ref = [[self.DEFAULT_CELL_VALUE for _ in range(self.DEFAULT_MAP_SIZE_X)] for __ in range(self.DEFAULT_MAP_SIZE_Y)]
+        # set start zone to be clear
         self._update_size()
+        indexes = self.get_start_zone_indexes()
+        self.set_cell_list(indexes,value=MapSetting.CLEAR)
         self.notify()
 
     def get_unknown_percentage(self):
@@ -214,6 +226,8 @@ class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
 
     def load_map_from_file(self,file_name):
         self._map_ref=self.load_map(file_name)
+        indexes = self.get_start_zone_indexes()
+        self.set_cell_list(indexes,value=MapSetting.CLEAR)
         self._update_size()
         self.notify()
 
@@ -244,16 +258,20 @@ class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
 
     def get_end_zone_center_pos(self):
         "this is hardcoded"
-        if (self._end_zone_centre_pos):
-            return self._end_zone_centre_pos
-        else:
-            return self.size_x-2,self.size_y-2
+        return self._end_zone_centre_pos if self._end_zone_centre_pos else (self.size_x-2,1)
 
     def get_start_zone_center_pos(self):
-        if (self._start_zone_centre_pos):
-            return self._start_zone_centre_pos
-        else:
-            return 1,1
+        return self._start_zone_centre_pos if self._start_zone_centre_pos else (1,self.size_y-2)
+
+    def get_end_zone_indexes(self):
+        #TODO: so far hardcoded for 3*3 zone area
+        x,y=self.get_end_zone_center_pos()
+        return [(x+i,y+j) for i in range(-1,2) for j in range(-1,2)]
+
+    def get_start_zone_indexes(self):
+        #TODO: so far hardcoded for 3*3 zone area
+        x,y=self.get_start_zone_center_pos()
+        return [(x+i,y+j) for i in range(-1,2) for j in range(-1,2)]
 
 class MapUI(BaseObserver):
     """
@@ -265,6 +283,8 @@ class MapUI(BaseObserver):
     _frame = None # frame to draw the map in
     _cells = [] # 2D list of buttons to show cell
     _map_ref = None
+    _start_zone_indexes= []
+    _end_zone_indexes = []
 
     def __init__(self,frame,map_ref):
         "create the cells"
@@ -272,6 +292,8 @@ class MapUI(BaseObserver):
         self._map_ref.add_change_listener(self)
         self._frame = frame
         size_x,size_y=self._map_ref.get_size_x(),self._map_ref.get_size_y()
+        self._start_zone_indexes = self._map_ref.get_start_zone_indexes()
+        self._end_zone_indexes = self._map_ref.get_end_zone_indexes()
         for i in range(size_y):
                 self._cells.append([])
                 for j in range(size_x):
@@ -287,7 +309,12 @@ class MapUI(BaseObserver):
         size_x,size_y=self._map_ref.get_size_x(),self._map_ref.get_size_y()
         for i in range(size_y):
             for j in range(size_x):
-                cell_color = self.CELL_COLORS[self._map_ref.get_cell(j,i)]
+                if ((j,i) in self._start_zone_indexes):
+                    cell_color = self.CELL_COLORS[MapSetting.START_ZONE]
+                elif ((j,i) in self._end_zone_indexes):
+                    cell_color = self.CELL_COLORS[MapSetting.END_ZONE]
+                else:
+                    cell_color = self.CELL_COLORS[self._map_ref.get_cell(j,i)]
                 self._cells[i][j].config(bg=cell_color)
 
     # observer method
