@@ -3,15 +3,6 @@ from common.pq import MinQueue
 from common.amap import MapRef
 
 
-def get_point_move_command(from_node, to_node):
-    """return the list of commands, from_node and to_node should be neighbours"""
-    action = AbsoluteOrientation.get_turn_action(start_ori=from_node.ori, end_ori=to_node.ori)
-    if action:
-        return [action, PMessage.M_MOVE_FORWARD]
-    else:
-        return [PMessage.M_MOVE_FORWARD]
-
-
 class AStarShortestPathAlgo():
     # algo settings
     NON_ACCESS_H_VALUE = 1E6
@@ -82,7 +73,7 @@ class AStarShortestPathAlgo():
         if start_node.equals(end_node):
             return []
         cmd_list = self.get_command_list(start_node=start_node, end_node=end_node.parent)
-        cmd_list.extend(get_point_move_command(from_node=end_node.parent, to_node=end_node))
+        cmd_list.extend(self.get_point_move_command(from_node=end_node.parent, to_node=end_node))
         return cmd_list
 
     def get_point_move_command(self,from_node,to_node):
