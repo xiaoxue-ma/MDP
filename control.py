@@ -15,17 +15,18 @@ class CentralController(StateMachine):
     _cur_state = None
     _next_state = None
 
-    _map_ref = None  # internal map
+    _map_ref = None # internal map
     _robot = None
     _explore_algo = None
     _fastrun_algo = None
 
-    _input_q = None  # input queue
+    _input_q = None # input queue
     _cmd_out_q = None
-    _data_out_qs = None  # list of queue
+    _data_out_qs = None # list of queue
 
-    _explore_time_limit = None  # integer
-    _explore_coverage = None  # integer
+    _explore_time_limit = None # integer
+    _explore_coverage = None # integer
+
     _exploration_command_delay = 1
 
     FAST_RUN_COMMAND_DELAY = 0.5 # in second
@@ -52,43 +53,43 @@ class CentralController(StateMachine):
     def set_next_state(self,state):
         print("Next state set to {}".format(str(state)))
         for q in self._data_out_qs:
-            self._enqueue_list(q=q, list=[PMessage(type=PMessage.T_STATE_CHANGE, msg=str(state))])
+            self._enqueue_list(q=q,list=[PMessage(type=PMessage.T_STATE_CHANGE,msg=str(state))])
         self._next_state = state
 
-    def update_remaining_explore_time(self, t):
+    def update_remaining_explore_time(self,t):
         print("Exploration remaining time: {}".format(t))
         for q in self._data_out_qs:
-            self._enqueue_list(q=q, list=[PMessage(type=PMessage.T_EXPLORE_REMAINING_TIME, msg=t)])
+            self._enqueue_list(q=q,list=[PMessage(type=PMessage.T_EXPLORE_REMAINING_TIME,msg=t)])
 
-    def move_robot(self, action):
+    def move_robot(self,action):
         self._robot.execute_command(action)
 
-    def update_map(self, sensor_values):
+    def update_map(self,sensor_values):
         "update the map_ref according to received sensor readings"
-        clear_pos_list, obstacle_pos_list = self._robot.sense_area(sensor_values)
-        self._map_ref.set_cell_list(pos_list=clear_pos_list, value=MapRef.CLEAR)
-        self._map_ref.set_cell_list(pos_list=obstacle_pos_list, value=MapRef.OBSTACLE)
+        clear_pos_list,obstacle_pos_list = self._robot.sense_area(sensor_values)
+        self._map_ref.set_cell_list(pos_list=clear_pos_list,value=MapRef.CLEAR)
+        self._map_ref.set_cell_list(pos_list=obstacle_pos_list,value=MapRef.OBSTACLE)
+        return clear_pos_list,obstacle_pos_list
 
     def get_next_exploration_move(self):
         return self._explore_algo.get_next_move()
 
     def is_map_fully_explored(self):
         "fully explored if the robot has explored the end zone and it has returned to start position"
-        if (self._robot.get_position() == self._map_ref.get_start_zone_center_pos()):
-            x, y = self._map_ref.get_end_zone_center_pos()
-            if (self._map_ref.get_cell(x, y) == MapRef.CLEAR):
+        if (self._robot.get_position()==self._map_ref.get_start_zone_center_pos()):
+            x,y=self._map_ref.get_end_zone_center_pos()
+            if (self._map_ref.get_cell(x,y)==MapRef.CLEAR):
                 return True
         return False
 
     def get_fast_run_commands(self):
-        fastrun_algo = AStarShortestPathAlgo(map_ref=self._map_ref, target_pos=self._map_ref.get_end_zone_center_pos())
-        result, time_taken = timed_call(fastrun_algo.get_shortest_path, robot_pos=self._robot.get_position(),
-                                        robot_ori=self._robot.get_orientation())
+        fastrun_algo = AStarShortestPathAlgo(map_ref=self._map_ref,target_pos=self._map_ref.get_end_zone_center_pos())
+        result, time_taken = timed_call(fastrun_algo.get_shortest_path,robot_pos=self._robot.get_position(),robot_ori=self._robot.get_orientation())
         print("Fast run calculation takes {}".format(time_taken))
         return result
 
     def is_robot_at_destination(self):
-        return self._robot.get_position() == self._map_ref.get_end_zone_center_pos()
+        return self._robot.get_position()==self._map_ref.get_end_zone_center_pos()
 
     def is_robot_at_start(self):
         return self._robot.get_position()==self._map_ref.get_start_zone_center_pos()
@@ -96,11 +97,11 @@ class CentralController(StateMachine):
     def set_exploration_time_limit(self,time_limit):
         self._explore_time_limit = int(time_limit)
 
-    def set_exploration_coverage(self, coverage_percent):  # coverage limit
+    def set_exploration_coverage(self,coverage_percent): # coverage limit
         self._explore_coverage = int(coverage_percent)
 
     def get_exploration_time_limit(self):
-        return self._explore_time_limit
+            return self._explore_time_limit
 
     def get_exploration_coverage_limit(self):
         return self._explore_coverage
@@ -130,7 +131,7 @@ class CentralController(StateMachine):
         self._explore_time_limit = None # integer
         self._explore_coverage = None
 
-    def __init__(self, input_q, cmd_out_q, data_out_qs):
+    def __init__(self,input_q,cmd_out_q,data_out_qs):
         self._input_q = input_q
         self._cmd_out_q = cmd_out_q
         self._data_out_qs = data_out_qs
@@ -139,22 +140,21 @@ class CentralController(StateMachine):
     def update(self):
         pass
 
-    def _enqueue_list(self, q, list, allow_delay=False):
+    def _enqueue_list(self,q,list,allow_delay=False):
         "enqueue list items on another thread"
-        start_new_thread(self._enqueue_list_internal, (q, list, allow_delay,))
+        start_new_thread(self._enqueue_list_internal,(q,list,allow_delay,))
 
-    def _enqueue_list_internal(self, q, list, allow_delay=False):
+    def _enqueue_list_internal(self,q,list,allow_delay=False):
         "thread task"
-        if len(list) == 1:
+        if (len(list)==1):
             q.put_nowait(list[0])
         else:
             for item in list:
                 q.put_nowait(item)
-                if allow_delay: time.sleep(self.FAST_RUN_COMMAND_DELAY)
+                if (allow_delay): time.sleep(self.FAST_RUN_COMMAND_DELAY)
 
     def get_robot_pos(self):
         return self._robot.get_position()
 
     def get_robot_ori(self):
         return self._robot.get_orientation()
-

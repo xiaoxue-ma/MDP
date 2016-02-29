@@ -10,45 +10,43 @@ from common.network import *
 
 
 class ClientSimulationApp():
+
     _text = None
-    _mv_btn = None  # button move forward
-    _tl_btn = None  # turn left
-    _tr_btn = None  # turn right
+    _mv_btn = None # button move forward
+    _tl_btn = None # turn left
+    _tr_btn = None # turn right
     _explore_btn = None
-    _fastrun_btn = None  # start fastest running
+    _fastrun_btn = None # start fastest running
     _jump_explore_btn = None
     _reset_btn = None
-    _explore_algo = None
 
     _map_ui = None
-    _map_ref = None  # internal 2D representation of map
+    _map_ref = None #internal 2D representation of map
     _robot = None
 
-    _client = None  # SocketClient
+    _client = None # SocketClient
 
-    def __init__(self, root):
+    def __init__(self,root):
         # status text boxes
-        self._info_frame = Frame(master=root)
-        self._info_frame.grid(row=0, column=0)
+        self._info_frame =  Frame(master=root)
+        self._info_frame.grid(row=0,column=0)
         self._init_info_frame(fr=self._info_frame)
         # buttons
         self._button_frame = Frame(master=root)
-        self._button_frame.grid(row=1, column=0)
+        self._button_frame.grid(row=1,column=0)
         self._init_btn_frame(fr=self._button_frame)
         # gui for set exploration time limit
-        self._limit_frame = Frame(master=root)
-        self._limit_frame.grid(row=2, column=0)
+        self._limit_frame =  Frame(master=root)
+        self._limit_frame.grid(row=2,column=0)
         self._init_limit_frame(fr=self._limit_frame)
         # load and save map
-        self._io_frame = Frame(master=root)
-        self._io_frame.grid(row=3, column=0)
+        self._io_frame =  Frame(master=root)
+        self._io_frame.grid(row=3,column=0)
         self._init_io_frame(fr=self._io_frame)
         # init map
         self._map_frame = Frame(master=root)
-        self._map_frame.grid(row=4, column=0)
+        self._map_frame.grid(row=4,column=0)
         self._init_map_frame(fr=self._map_frame)
-        # init algo
-        self._explore_algo = MazeExploreAlgo(robot=self._robot, map_ref=self._map_ref)
         # start server
         self._client = SocketClient(server_addr=MOCK_SERVER_ADDR,server_port=ANDROID_SERVER_PORT)
         start_new_thread(self.start_session,())
@@ -115,7 +113,7 @@ class ClientSimulationApp():
 
     def _init_map_frame(self,fr):
         self._map_ref = MapRef()
-        self._map_ui = MapUI(frame=fr, map_ref=self._map_ref)
+        self._map_ui = MapUI(frame=fr,map_ref=self._map_ref)
         # init robot
         self._robot = RobotRef()
         self._robotUI = RobotUI(robot=self._robot,cells=self._map_ui.get_cells())
@@ -133,7 +131,7 @@ class ClientSimulationApp():
         self.send_data(con=self._client,type=PMessage.T_SET_EXPLORE_SPEED,data=delay)
 
     def set_explore_time_limit(self):
-        time_limit = int(self._set_explore_time_limit_text.get("1.0", END))
+        time_limit = int(self._set_explore_time_limit_text.get("1.0",END))
         self._explore_time_limit = time_limit
         self.send_data(con=self._client,type=PMessage.T_SET_EXPLORE_TIME_LIMIT,data=time_limit)
         self.show_status("Exploration time limit set to {} s".format(time_limit))
@@ -150,14 +148,14 @@ class ClientSimulationApp():
         self.show_status("Exploration ended")
 
     def load_map(self):
-        map_file_path = self._load_map_text.get("1.0", END)[:-1]
+        map_file_path = self._load_map_text.get("1.0",END)[:-1]
         self._map_ref.load_map_from_file(map_file_path)
         self._robot.refresh()
         print("map loaded")
-        self.send_data(con=self._client, type=PMessage.T_LOAD_MAP, data=map_file_path)
+        self.send_data(con=self._client,type=PMessage.T_LOAD_MAP,data=map_file_path)
 
     def save_map(self):
-        map_file_path = self._save_map_text.get("1.0", END)[:-1]
+        map_file_path = self._save_map_text.get("1.0",END)[:-1]
         self._map_ref.save_map_to_file(map_file_path)
         self.show_status("Map saved")
 
@@ -180,8 +178,8 @@ class ClientSimulationApp():
     def send_command(self,command):
         if (not self._client):
             raise Exception("socket not ready")
-        self.send_data(con=self._client, type=PMessage.T_COMMAND,
-                       data=command)
+        self.send_data(con=self._client,type=PMessage.T_COMMAND,
+                       data = command)
         self.show_status("Sent command : " + str(command))
 
     def move_forward(self):
@@ -199,50 +197,54 @@ class ClientSimulationApp():
         self.show_status("Rpi connected")
         self.serve_connection(self._client)
 
-    def serve_connection(self, con):
+    def serve_connection(self,con):
         while True:
-            data = con.read()
+            data =con.read()
             if (data):
                 objs = PMessage.load_messages_from_json(data)
                 if (not objs): continue
                 for msg_obj in objs:
                     print("received data: " + str(msg_obj))
-                    if (msg_obj.get_type() == PMessage.T_MAP_UPDATE):
+                    if (msg_obj.get_type()==PMessage.T_MAP_UPDATE):
                         self.process_data(msg_obj.get_msg())
                         self._robot.refresh()
-                    elif (msg_obj.get_type() == PMessage.T_STATE_CHANGE):
+                    elif (msg_obj.get_type()==PMessage.T_STATE_CHANGE):
                         self.show_status("status changed to :{}".format(msg_obj.get_msg()))
-
                     elif (msg_obj.get_type()==PMessage.T_ROBOT_MOVE and msg_obj.get_msg()):
                         self._map_ref.refresh()
                         self._robot.execute_command(msg_obj.get_msg())
-                    elif (msg_obj.get_type() == PMessage.T_EXPLORE_REMAINING_TIME):
+                    elif(msg_obj.get_type()==PMessage.T_EXPLORE_REMAINING_TIME):
                         time_remain = msg_obj.get_msg()
                         self._explore_time_remain_label.config(text="Exploration remaining time:{}".format(time_remain))
-                    elif (msg_obj.get_type() == PMessage.T_CUR_EXPLORE_COVERAGE):
+                    elif(msg_obj.get_type()==PMessage.T_CUR_EXPLORE_COVERAGE):
                         coverage = msg_obj.get_msg()
                         self._explore_coverage_label.config(text="Coverage: {}".format(coverage))
 
 
-    def process_data(self, recv_data):
+    def process_data(self,recv_data):
         "update the map according to sensor data and return reply msg"
-        sensor_values = [int(i) for i in recv_data.split(SENSOR_READING_DELIMITER)]
-        self.update_map(sensor_values)
+        clear_pos_list=recv_data[0]
+        obstacle_pos_list =recv_data[1]
+        self._map_ref.set_cell_list(pos_list=clear_pos_list,value=MapSetting.CLEAR,notify=False)
+        self._map_ref.set_cell_list(pos_list=obstacle_pos_list,value=MapSetting.OBSTACLE,notify=False)
+        #self._map_ref.refresh()
+        #sensor_values = [int(i) for i in recv_data.split(SENSOR_READING_DELIMITER)]
+        #self.update_map(sensor_values)
 
-
-    def update_map(self, sensor_values):
+    # deprecated
+    def update_map(self,sensor_values):
         "update the map_ref and also the gui"
-        clear_pos_list, obstacle_pos_list = self._robot.sense_area(sensor_values)
-        self._map_ref.set_cell_list(pos_list=clear_pos_list, value=MapRef.CLEAR)
-        self._map_ref.set_cell_list(pos_list=obstacle_pos_list, value=MapRef.OBSTACLE)
+        clear_pos_list,obstacle_pos_list = self._robot.sense_area(sensor_values)
+        self._map_ref.set_cell_list(pos_list=clear_pos_list,value=MapRef.CLEAR)
+        self._map_ref.set_cell_list(pos_list=obstacle_pos_list,value=MapRef.OBSTACLE)
 
-    def show_status(self, msg):
-        self._text.insert(END, msg + "\n")
+    def show_status(self,msg):
+        self._text.insert(END,msg+"\n")
         self._cur_info.config(text=msg)
 
-    def send_data(self, con, type, data):
+    def send_data(self,con,type,data):
         "con is a SocketClient object"
-        msg = PMessage(type=type, msg=data)
+        msg = PMessage(type=type,msg=data)
         con.write(str(msg))
         print("msg sent: {}".format(msg))
 
@@ -252,6 +254,5 @@ def main():
     app = ClientSimulationApp(root=window)
     window.title("Android")
     window.mainloop()
-
 
 main()
