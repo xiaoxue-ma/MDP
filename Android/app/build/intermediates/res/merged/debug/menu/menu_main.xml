@@ -1,0 +1,36 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" tools:context=".MainActivity">
+
+    <item android:id="@+id/bt_status"
+        android:icon="@drawable/bt_off"
+        android:title="Bluetooth status"
+        android:checkable="false"
+        android:enabled="false"
+        app:showAsAction="ifRoom" />
+
+    <item android:id="@+id/startRobot"
+        android:icon="@drawable/location_on"
+        android:title="Position robot"
+        app:showAsAction="ifRoom" />
+
+    <item android:id="@+id/connect_scan"
+        android:icon="@android:drawable/ic_menu_search"
+        android:title="@string/connect"
+        android:orderInCategory="10"
+        app:showAsAction="ifRoom|withText" />
+
+
+
+    <item android:id="@+id/settings"
+        android:icon="@android:drawable/ic_menu_set_as"
+        android:title="@string/settings"
+        android:orderInCategory="100"
+        app:showAsAction="never" />
+
+    <item android:id="@+id/discoverable"
+        android:icon="@android:drawable/ic_menu_mylocation"
+        android:title="@string/discoverable"
+        android:orderInCategory="100"
+        app:showAsAction="never" />
+</menu>

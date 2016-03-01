@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:padding="10dp">
+
+    <TextView
+        android:id="@+id/settingTx1"
+        android:layout_width="100dp"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:text="Explore Start"/>
+
+    <EditText
+        android:id="@+id/settingExplore"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_alignTop="@+id/settingTx1"
+        android:layout_toRightOf="@+id/settingTx1"
+        android:layout_marginLeft="20dp"/>
+
+    <TextView
+        android:id="@+id/settingTx2"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_below="@+id/settingTx1"
+        android:layout_marginTop="10dp"
+        android:text="Race Start"/>
+
+    <EditText
+        android:id="@+id/settingRace"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_alignTop="@+id/settingTx2"
+        android:layout_toRightOf="@+id/settingTx2"
+        android:layout_alignLeft="@+id/settingExplore"/>
+
+    <TextView
+        android:id="@+id/settingTx10"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_below="@+id/settingTx2"
+        android:layout_marginTop="10dp"
+        android:text="Stop"/>
+
+    <EditText
+        android:id="@+id/settingStop"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_alignTop="@+id/settingTx10"
+        android:layout_toRightOf="@+id/settingTx10"
+        android:layout_alignLeft="@+id/settingExplore"/>
+
+    <TextView
+        android:id="@+id/settingTx4"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_below="@+id/settingTx10"
+        android:layout_marginTop="10dp"
+        android:text="Up"/>
+
+    <EditText
+        android:id="@+id/settingUp"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_alignTop="@+id/settingTx4"
+        android:layout_toRightOf="@+id/settingTx4"
+        android:layout_alignLeft="@+id/settingExplore"/>
+
+    <TextView
+        android:id="@+id/settingTx7"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_below="@+id/settingTx4"
+        android:layout_marginTop="10dp"
+        android:text="Down"/>
+
+    <EditText
+        android:id="@+id/settingDown"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_alignTop="@+id/settingTx7"
+        android:layout_toRightOf="@+id/settingTx7"
+        android:layout_alignLeft="@+id/settingExplore"/>
+
+    <TextView
+        android:id="@+id/settingTx5"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_below="@+id/settingTx7"
+        android:layout_marginTop="10dp"
+        android:text="Left"/>
+
+    <EditText
+        android:id="@+id/settingLeft"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_alignTop="@+id/settingTx5"
+        android:layout_toRightOf="@+id/settingTx5"
+        android:layout_alignLeft="@+id/settingExplore"/>
+
+    <TextView
+        android:id="@+id/settingTx6"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_below="@+id/settingTx5"
+        android:layout_marginTop="10dp"
+        android:text="Right"/>
+
+    <EditText
+        android:id="@+id/settingRight"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_alignTop="@+id/settingTx6"
+        android:layout_toRightOf="@+id/settingTx6"
+        android:layout_alignLeft="@+id/settingExplore"/>
+
+    <TextView
+        android:id="@+id/settingTx8"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_below="@+id/settingTx6"
+        android:layout_marginTop="10dp"
+        android:text="Command 1"/>
+
+    <EditText
+        android:id="@+id/settingCmd1"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_alignTop="@+id/settingTx8"
+        android:layout_toRightOf="@+id/settingTx8"
+        android:layout_alignLeft="@+id/settingExplore"/>
+
+    <TextView
+        android:id="@+id/settingTx9"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_below="@+id/settingTx8"
+        android:layout_marginTop="10dp"
+        android:text="Command 2"/>
+
+    <EditText
+        android:id="@+id/settingCmd2"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_alignTop="@+id/settingTx9"
+        android:layout_toRightOf="@+id/settingTx9"
+        android:layout_alignLeft="@+id/settingExplore"/>
+
+    <TextView
+        android:id="@+id/settingTx11"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_below="@+id/settingTx9"
+        android:layout_marginTop="10dp"
+        android:text="Command 3"/>
+
+    <EditText
+        android:id="@+id/settingCmd3"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_alignTop="@+id/settingTx11"
+        android:layout_toRightOf="@+id/settingTx11"
+        android:layout_alignLeft="@+id/settingExplore"/>
+
+    <TextView
+        android:id="@+id/settingTx12"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_below="@+id/settingTx11"
+        android:layout_marginTop="10dp"
+        android:text="Command 4"/>
+
+    <EditText
+        android:id="@+id/settingCmd4"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_alignTop="@+id/settingTx12"
+        android:layout_toRightOf="@+id/settingTx12"
+        android:layout_alignLeft="@+id/settingExplore"/>
+
+    <TextView
+        android:id="@+id/settingTx13"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_below="@+id/settingTx12"
+        android:layout_marginTop="10dp"
+        android:text="Command 5"/>
+
+    <EditText
+        android:id="@+id/settingCmd5"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:gravity="center_vertical"
+        android:layout_alignTop="@+id/settingTx13"
+        android:layout_toRightOf="@+id/settingTx13"
+        android:layout_alignLeft="@+id/settingExplore"/>
+
+
+    <Button
+        android:id="@+id/btnSaveSettings"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/settingTx13"
+        android:layout_marginTop="30dp"
+        android:layout_centerHorizontal="true"
+        android:text="Save Settings"/>
+
+</RelativeLayout>
