@@ -31,7 +31,7 @@ def connect_interfaces(interfaces):
         interface.connect()
 
 
-def main():
+def main(use_mock_arduino=False):
     """init and start the system"""
     # init all queues
     to_android = Queue(maxsize=0)  # output
@@ -42,7 +42,14 @@ def main():
     pc_interface = get_pc_interface()
     android_interface = get_android_interface()
     arduino_interface = get_arduino_interface()
-    connect_interfaces([pc_interface, android_interface, arduino_interface])
+    # run mock arduino
+    if (use_mock_arduino):
+        from simulators.controllers import ArduinoController
+        from common.amap import MapRef
+        from common.robot import RobotRef
+        arduino_mock = ArduinoController(map_ref=MapRef(),robot_ref=RobotRef())
+        thread.start_new_thread(arduino_mock.run,())
+    connect_interfaces([pc_interface, arduino_interface,android_interface])
     # start output threads
     # thread.start_new_thread(write_to_interface,(to_pc,pc_interface,))
     thread.start_new_thread(write_to_interface, (to_android, android_interface,))
@@ -53,5 +60,8 @@ def main():
     controller = CentralController(input_q=to_control, cmd_out_q=to_arduino, data_out_qs=[to_pc, to_android])
     controller.control_task()
 
-
-main()
+use_mock_arduino = raw_input("use mock arduino?[y/n]")
+if (use_mock_arduino=="y"):
+    main(use_mock_arduino=True)
+else:
+    main()

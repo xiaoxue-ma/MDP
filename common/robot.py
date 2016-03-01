@@ -144,6 +144,7 @@ class RobotUI(RobotSettings,BaseObserver):
         self._robot = robot
         self._cells = cells
         robot.add_change_listener(self)
+        self.update()
 
     def paint_robot(self):
         "paint the robot shape on the cells given"

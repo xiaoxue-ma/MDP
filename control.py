@@ -27,7 +27,7 @@ class CentralController(StateMachine):
     _explore_time_limit = None # integer
     _explore_coverage = None # integer
 
-    _exploration_command_delay = 1
+    _exploration_command_delay = 2
 
     FAST_RUN_COMMAND_DELAY = 0.5 # in second
 

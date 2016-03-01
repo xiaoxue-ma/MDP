@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from thread import start_new_thread
 import socket
+import time
 
 
 class BaseNetworkInterface():
@@ -91,7 +92,16 @@ class SocketClient(BaseNetworkInterface):
         server_ip = self._server_addr
         server_port = self._server_port
         server_address = (server_ip, server_port)
-        sock.connect(server_address)
+        connected = False
+        while(not connected):
+            try:
+                sock.connect(server_address)
+                connected = True
+            except Exception as e:
+                print("Failed to connect to {}, message: {}".format(server_ip,e.message))
+                print("Retrying...")
+                time.sleep(1)
+
 
     def _get_io(self):
         return self._sock

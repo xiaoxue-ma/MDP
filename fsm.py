@@ -128,7 +128,7 @@ class ExplorationState(BaseState):
     MAP_UPDATE_IN_POS_LIST = False # map update sent in a list of clear positions and a list of obstacle positions
 
     def __str__(self):
-        return "ExplorationState"
+        return "explore"
 
     def process_input(self,input_tuple):
         type,msg = input_tuple
