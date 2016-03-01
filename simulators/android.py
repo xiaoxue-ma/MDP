@@ -26,6 +26,8 @@ class ClientSimulationApp():
 
     _client = None # SocketClient
 
+    _MAP_UPDATE_IN_LIST = False
+
     def __init__(self,root):
         # status text boxes
         self._info_frame =  Frame(master=root)
@@ -211,7 +213,8 @@ class ClientSimulationApp():
                     elif (msg_obj.get_type()==PMessage.T_STATE_CHANGE):
                         self.show_status("status changed to :{}".format(msg_obj.get_msg()))
                     elif (msg_obj.get_type()==PMessage.T_ROBOT_MOVE and msg_obj.get_msg()):
-                        self._map_ref.refresh()
+                        pos_list = self._robot.get_occupied_postions()
+                        self._map_ref.notify(pos_list)
                         self._robot.execute_command(msg_obj.get_msg())
                     elif(msg_obj.get_type()==PMessage.T_EXPLORE_REMAINING_TIME):
                         time_remain = msg_obj.get_msg()
@@ -223,13 +226,14 @@ class ClientSimulationApp():
 
     def process_data(self,recv_data):
         "update the map according to sensor data and return reply msg"
-        clear_pos_list=recv_data[0]
-        obstacle_pos_list =recv_data[1]
-        self._map_ref.set_cell_list(pos_list=clear_pos_list,value=MapSetting.CLEAR,notify=False)
-        self._map_ref.set_cell_list(pos_list=obstacle_pos_list,value=MapSetting.OBSTACLE,notify=False)
-        #self._map_ref.refresh()
-        #sensor_values = [int(i) for i in recv_data.split(SENSOR_READING_DELIMITER)]
-        #self.update_map(sensor_values)
+        if (self._MAP_UPDATE_IN_LIST):
+            clear_pos_list=recv_data[0]
+            obstacle_pos_list =recv_data[1]
+            self._map_ref.set_cell_list(pos_list=clear_pos_list,value=MapSetting.CLEAR,notify=True)
+            self._map_ref.set_cell_list(pos_list=obstacle_pos_list,value=MapSetting.OBSTACLE,notify=True)
+        else:
+            sensor_values = [int(i) for i in recv_data.split(SENSOR_READING_DELIMITER)]
+            self.update_map(sensor_values)
 
     # deprecated
     def update_map(self,sensor_values):

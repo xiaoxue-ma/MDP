@@ -125,6 +125,7 @@ class ExplorationState(BaseState):
     # for time limited exploration only
     LIST_LEN_BIAS = 2
     STEP_TIME_BIAS = 0.2
+    MAP_UPDATE_IN_POS_LIST = False # map update sent in a list of clear positions and a list of obstacle positions
 
     def __str__(self):
         return "ExplorationState"
@@ -157,11 +158,12 @@ class ExplorationState(BaseState):
         # update internal map
         sensor_values = map(int,msg.get_msg().split(","))
         clear_pos_list,obstacle_pos_list = self._machine.update_map(sensor_values)
+        map_update_to_send = [clear_pos_list,obstacle_pos_list] if self.MAP_UPDATE_IN_POS_LIST else msg.get_msg()
         # check whether exploration is finished
         if (self.can_end_exploration()):
             self._machine.set_next_state(ExplorationDoneState(machine=self._machine))
             return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_END_EXPLORE)],\
-                   [PMessage(type=PMessage.T_MAP_UPDATE,msg=[clear_pos_list,obstacle_pos_list]),coverage_msg]
+                   [PMessage(type=PMessage.T_MAP_UPDATE,msg=map_update_to_send),coverage_msg]
         else:
             # get next move
             command = self.get_next_move()
@@ -169,7 +171,7 @@ class ExplorationState(BaseState):
             time.sleep(self._machine.get_exploration_command_delay())
             self._machine.move_robot(command)
             return [PMessage(type=PMessage.T_COMMAND,msg=command)],\
-                   [PMessage(type=PMessage.T_MAP_UPDATE,msg=[clear_pos_list,obstacle_pos_list]),PMessage(type=PMessage.T_ROBOT_MOVE,msg=command),coverage_msg]
+                   [PMessage(type=PMessage.T_MAP_UPDATE,msg=map_update_to_send),PMessage(type=PMessage.T_ROBOT_MOVE,msg=command),coverage_msg]
 
     def time_up(self):
         "action when time for exploration is up"
