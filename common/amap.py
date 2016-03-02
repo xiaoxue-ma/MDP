@@ -316,13 +316,13 @@ class MapUI(BaseObserver):
                     cell_color = self.CELL_COLORS[MapSetting.END_ZONE]
                 else:
                     cell_color = self.CELL_COLORS[self._map_ref.get_cell(j,i)]
-                self._cells[i][j].config(bg=cell_color)
+                self._cells[i][j].config(highlightbackground=cell_color)
 
     def paint_list(self,pos_list):
         for pos in pos_list:
             x,y=pos[0],pos[1]
             if (not self._map_ref.is_out_of_arena(x,y)):
-                self._cells[y][x].config(bg=self.CELL_COLORS[self._map_ref.get_cell(x,y)])
+                self._cells[y][x].config(highlightbackground=self.CELL_COLORS[self._map_ref.get_cell(x,y)])
 
     # observer method
     def update(self,data=None):

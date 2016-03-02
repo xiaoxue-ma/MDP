@@ -17,7 +17,7 @@ def test_network():
 
 def main():
     print(os.path.dirname(__file__))
-    convert_text_to_binary("map-5.txt")
+    convert_text_to_binary("map-7.txt")
 
 def test_random_map():
     map_io = BitMapIOMixin()
@@ -49,4 +49,4 @@ def print_2d(arr):
             sys.stdout.write("{},".format(arr[y][x]))
         print()
 
-test_network()
+main()

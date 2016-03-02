@@ -141,9 +141,9 @@ class RobotUI(RobotSettings,BaseObserver):
             for j in range(-1,2):
                 x,y = self._robot.get_position()[0] + i,self._robot.get_position()[1] + j
                 if ((i,j)==head_pos):
-                    self._cells[y][x].config(bg=self.HEAD_COLOR)
+                    self._cells[y][x].config(highlightbackground=self.HEAD_COLOR)
                 else:
-                    self._cells[y][x].config(bg=self.BODY_COLOR)
+                    self._cells[y][x].config(highlightbackground=self.BODY_COLOR)
 
     def update(self):
         self.paint_robot()
