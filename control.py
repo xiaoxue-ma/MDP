@@ -146,12 +146,13 @@ class CentralController(StateMachine):
 
     def _enqueue_list_internal(self,q,list,allow_delay=False):
         "thread task"
-        if (len(list)==1):
+        if (len(list)==1 and list[0]):
             q.put_nowait(list[0])
         else:
             for item in list:
-                q.put_nowait(item)
-                if (allow_delay): time.sleep(self.FAST_RUN_COMMAND_DELAY)
+                if (item):
+                    q.put_nowait(item)
+                    if (allow_delay): time.sleep(self.FAST_RUN_COMMAND_DELAY)
 
     def get_robot_pos(self):
         return self._robot.get_position()

@@ -16,12 +16,27 @@ class MazeExploreAlgo():
     }
     action_precedence = DEFAULT_ACTION_PRECEDENCE
 
+    MOVE_ALONG_WALL_STRATEGY = "alongwall"
+    NO_DUPLICATE_EXPLORE_STRATEGY = "noduplicate"
+
+    _strategy = MOVE_ALONG_WALL_STRATEGY
+    _last_action = None
+
     def __init__(self,robot,map_ref):
         self._robot = robot
         self._map_ref = map_ref
 
     def get_next_move(self):
         "return the command to be executed next"
+        if (self._strategy == self.MOVE_ALONG_WALL_STRATEGY):
+            return self.move_along_wall()
+        else:
+            return self.move_along_wall_efficient()
+
+    def move_along_wall_efficient(self):
+        pass
+
+    def move_along_wall(self):
         for action in self.action_precedence:
             ori = self.get_ori_to_check(desired_action=action)
             status = self.check_status(ori)
@@ -32,6 +47,7 @@ class MazeExploreAlgo():
                 return action
         # if no action can be done, then try going back
         return PMessage.M_TURN_RIGHT
+
 
 
     def check_status(self,ori):

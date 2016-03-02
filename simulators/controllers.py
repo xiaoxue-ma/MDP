@@ -186,7 +186,7 @@ class AndroidController(BasePublisher,BaseSimulatorController):
         self.show_status("Exploration time limit set to {} s".format(time_limit))
 
     def set_robot_pos(self,x,y):
-        self.send_data(type=PMessage.T_SET_ROBOT_POS,data=msg)
+        self.send_data(type=PMessage.T_SET_ROBOT_POS,data="{},{}".format(x,y))
         self._map_ref.refresh()
         self._robot.set_position((int(x),int(y)))
 

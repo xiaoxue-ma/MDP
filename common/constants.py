@@ -1,6 +1,8 @@
 """
-constants to be used in all programs in the package
+settings to be used in all programs in the package
 """
+
+
 
 # for server communication
 MOCK_SERVER_ADDR = "localhost"#"172.22.164.11"

@@ -126,6 +126,7 @@ class ExplorationState(BaseState):
     LIST_LEN_BIAS = 2
     STEP_TIME_BIAS = 0.2
     MAP_UPDATE_IN_POS_LIST = False # map update sent in a list of clear positions and a list of obstacle positions
+    SEND_COVERAGE_UPDATE = False
 
     def __str__(self):
         return "explore"
@@ -140,7 +141,10 @@ class ExplorationState(BaseState):
                 self.timer.start()
         # check coverage if needed
         current_coverage = self._machine.get_current_exploration_coverage()
-        coverage_msg = PMessage(type=PMessage.T_CUR_EXPLORE_COVERAGE,msg=current_coverage)
+        if (self.SEND_COVERAGE_UPDATE):
+            coverage_msg = PMessage(type=PMessage.T_CUR_EXPLORE_COVERAGE,msg=current_coverage)
+        else:
+            coverage_msg = None
         # android "end explore" command
         if (type==ANDROID_LABEL and msg.get_type()==PMessage.T_COMMAND and msg.get_msg()==PMessage.M_END_EXPLORE):
             # stop timer and transit state
