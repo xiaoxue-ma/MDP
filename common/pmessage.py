@@ -26,6 +26,7 @@ class PMessage():
     M_MOVE_FORWARD = "mf"
     M_TURN_LEFT = "tl"
     M_TURN_RIGHT = "tr"
+    M_TURN_BACK = "tb"
     M_START_FASTRUN = "run"
     M_REACH_END = "end"
     M_RESET = "reset"

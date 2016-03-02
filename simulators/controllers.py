@@ -104,6 +104,8 @@ class ArduinoController(BaseSimulatorController):
         elif(instruct==PMessage.M_MOVE_FORWARD):
             self._map_ref.refresh()
             self._robot.move_forward()
+        elif(instruct==PMessage.M_TURN_BACK):
+            self._robot.turn_back()
         elif(instruct==PMessage.M_START_EXPLORE):self._sending_sensor_data=True
         elif (instruct==PMessage.M_END_EXPLORE): self._sending_sensor_data = False
         elif(instruct==PMessage.M_START_FASTRUN): self._sending_move_ack=True

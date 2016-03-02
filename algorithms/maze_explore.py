@@ -5,6 +5,7 @@ from common.pmessage import PMessage
 class MazeExploreAlgo():
     _robot = None # reference to robot object
     _map_ref = None # reference to map array
+    _history_ls = [] # list of position, orientation tuples
 
     CAN_ACCESS,CANNOT_ACCESS,UNSURE = 1,2,3
     # in the exploration, the robot will attempt the following action in sequence
@@ -20,7 +21,6 @@ class MazeExploreAlgo():
     NO_DUPLICATE_EXPLORE_STRATEGY = "noduplicate"
 
     _strategy = MOVE_ALONG_WALL_STRATEGY
-    _last_action = None
 
     def __init__(self,robot,map_ref):
         self._robot = robot
@@ -37,6 +37,13 @@ class MazeExploreAlgo():
         pass
 
     def move_along_wall(self):
+        # check whether the robot has gone into a cycle
+        if ((self._robot.get_position(),self._robot.get_orientation()) in self._history_ls):
+            self.action_precedence = [PMessage.M_TURN_RIGHT,PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT]
+            return PMessage.M_TURN_BACK
+        else:
+            self._history_ls.append((self._robot.get_position(),self._robot.get_orientation()))
+
         for action in self.action_precedence:
             ori = self.get_ori_to_check(desired_action=action)
             status = self.check_status(ori)
@@ -45,8 +52,9 @@ class MazeExploreAlgo():
                 self.action_precedence = self.PRECEDENCE_UPDATE_DICT[action][status]
                 # do this action
                 return action
+
         # if no action can be done, then try going back
-        return PMessage.M_TURN_RIGHT
+        return PMessage.M_TURN_BACK
 
 
 

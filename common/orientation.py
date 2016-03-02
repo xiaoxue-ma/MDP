@@ -45,6 +45,9 @@ class AbsoluteOrientation(Orientation):
     def to_right(self):
         return AbsoluteOrientation((self._val+2*1)%8)
 
+    def to_back(self):
+        return AbsoluteOrientation((self._val+2*2)%8)
+
     @staticmethod
     def get_ori_at_dest(start_pos,dest_pos):
         "return the resulting ori if the robot go from start to dest"

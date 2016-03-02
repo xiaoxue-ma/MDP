@@ -46,6 +46,9 @@ class RobotRef(RobotSettings,BasePublisher):
     def turn_right(self):
         self.set_orientation(self._ori.to_right())
 
+    def turn_back(self):
+        self.set_orientation(self._ori.to_back())
+
     def move_forward(self):
         pos_change = self._ori.to_pos_change()
         self.set_position((self._pos[0]+pos_change[0],self._pos[1]+pos_change[1]))
@@ -54,6 +57,7 @@ class RobotRef(RobotSettings,BasePublisher):
         if (command==PMessage.M_TURN_RIGHT): self.turn_right()
         elif (command==PMessage.M_TURN_LEFT): self.turn_left()
         elif(command==PMessage.M_MOVE_FORWARD): self.move_forward()
+        elif(command==PMessage.M_TURN_BACK): self.turn_back()
 
     def get_sensor_readings(self,map_ref):
         "return a list of numbers"
