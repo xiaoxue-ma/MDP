@@ -39,7 +39,8 @@ class PCInterface(object):
     def read(self):
         try:
             msg = self.client_sock.recv(1024)
-            print "WIFI--Read from PC: %s" % str(msg)
+            if len(msg) > 0:
+                print "WIFI--Read from PC: %s" % str(msg)
             return msg
         except Exception, e:
             print "WIFI--read exception: %s" % str(e)
