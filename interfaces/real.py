@@ -11,7 +11,7 @@ WIFI_HOST = "192.168.1.1"
 WIFI_PORT = 50001
 SER_BAUD = 115200
 SER_PORT = "/dev/ttyACM0"
-N7_MAC = "50:46:5D:84:91:20"
+N7_MAC = "08:60:6E:A5:A5:86"
 BT_UUID = "00001101-0000-1000-8000-00805F9B34FB"
 BT_PORT = 4
 
@@ -133,9 +133,9 @@ class AndroidInterface(Interface):
                               )
             self.client_sock, client_info = self.server_sock.accept()
 
-            if client_info[0] != N7_MAC:
-                print "BT--Unauthorized device, disconnecting..."
-                return
+            # if client_info[0] != N7_MAC:
+            #     print "BT--Unauthorized device, disconnecting..."
+            #     return
 
             print("BT--Connected to %s on channel %s" % (str(client_info), str(port)))
             self.status = True
