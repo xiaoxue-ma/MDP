@@ -1,6 +1,7 @@
 import socket
 from config import *
 
+
 class PCInterface(object):
     def __init__(self):
         self.status = False
@@ -14,12 +15,13 @@ class PCInterface(object):
             self.client_sock, self.client_addr = self.socket.accept()
             print "WIFI--Connected to ", self.client_addr
             self.status = True
+            return self.status
             # receive the first message from client, know the client address
             #data, self.pcaddr = self.ipsock.recv(1024)
         except Exception, e:
             print "WIFI--connection exception: %s" % str(e)
             self.status = False
-            self.reconnect()
+            # self.reconnect()
 
     def disconnect(self):
         try:
@@ -38,16 +40,15 @@ class PCInterface(object):
         try:
             msg = self.client_sock.recv(1024)
             print "WIFI--Read from PC: %s" % str(msg)
-            return (self.name, PMessage(json_str=msg))
+            return msg
         except Exception, e:
             print "WIFI--read exception: %s" % str(e)
-            self.reconnect()
+            # self.reconnect()
 
     def write(self, msg):
         try:
-            msg = msg.render_msg()
             self.client_sock.sendto(msg, self.client_addr)
             print "WIFI--Write to PC: %s" % str(msg)
         except Exception, e:
             print "WIFI--write exception: %s" % str(e)
-            self.reconnect()
+            # self.reconnect()
