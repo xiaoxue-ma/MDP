@@ -1,6 +1,7 @@
 import serial
 from config import *
 
+
 class ArduinoInterface(object):
     def __init__(self):
         self.status = False
@@ -12,6 +13,7 @@ class ArduinoInterface(object):
             if self.ser is not None:
                 self.status = True
                 print "SER--Connected to Arduino!"
+            return self.status
         except Exception, e:
             print "SER--connection exception: %s" % str(e)
             self.status = False
@@ -37,12 +39,16 @@ class ArduinoInterface(object):
                 return msg
         except Exception, e:
             print "SER--read exception: %s" % str(e)
-            self.reconnect()
+            # self.reconnect()
 
     def write(self, msg):
         try:
-            self.ser.write(msg + "|")
+            self.ser.write(msg)
             print "SER--Write to Arduino: %s" % str(msg)
         except Exception, e:
             print "SER--write exception: %s" % str(e)
-            self.reconnect()
+            # self.reconnect()
+
+    def flush(self):
+        self.ser.flushInput()
+        self.ser.flushOutput()
