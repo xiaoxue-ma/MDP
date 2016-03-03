@@ -1,6 +1,8 @@
 __author__ = 'Boss'
 import thread
 import time
+import sys
+import os
 from arduino_interface import ArduinoInterface
 
 
@@ -10,14 +12,14 @@ class ArduinoTest:
 
     def connect_arduino(self):
         connected = self.arduino.connect()
-        while not connected:
-            time.sleep(1)
-            connected = self.arduino.connect()
+        # while not connected:
+        #     time.sleep(1)
+        #     connected = self.arduino.connect()
 
     def write_arduino(self):
-        self.arduino.flush()
-        while True:
-            x = (raw_input())
+        # self.arduino.flush()
+        # while True:
+            x = "t"
             self.arduino.write(x + "\n")
 
     def read_arduino(self):
@@ -25,6 +27,7 @@ class ArduinoTest:
             val = self.arduino.read()
             if val is not None:
                 time.sleep(0)
+      
 
     def start_thread(self):
         try:
@@ -33,9 +36,10 @@ class ArduinoTest:
         except Exception, e:
             print "Unable to start thread!"
             print "Error: %s" % str(e)
+        while True:
+            pass
 
 if __name__ == "__main__":
-    print(raw_input())
     test = ArduinoTest()
     test.connect_arduino()
     test.start_thread()
