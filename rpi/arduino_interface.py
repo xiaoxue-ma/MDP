@@ -9,7 +9,7 @@ class ArduinoInterface(object):
 
     def connect(self):
         try:
-            self.ser = serial.Serial(SER_PORT, SER_BAUD, timeout=3)
+            self.ser = serial.Serial(SER_PORT, SER_BAUD)
             if self.ser is not None:
                 self.status = True
                 print "SER--Connected to Arduino!"
@@ -52,3 +52,10 @@ class ArduinoInterface(object):
     def flush(self):
         self.ser.flushInput()
         self.ser.flushOutput()
+
+if __name__ == '__main__':
+    test = ArduinoInterface()
+    test.connect()
+    msg = raw_input()
+    test.write(msg)
+    test.read()
