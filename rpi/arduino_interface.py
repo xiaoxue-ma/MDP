@@ -1,6 +1,6 @@
 import serial
 from config import *
-
+import time
 
 class ArduinoInterface(object):
     def __init__(self):
@@ -9,7 +9,8 @@ class ArduinoInterface(object):
 
     def connect(self):
         try:
-            self.ser = serial.Serial(SER_PORT, SER_BAUD)
+            self.ser = serial.Serial(SER_PORT, 9600)
+            time.sleep(2)
             if self.ser is not None:
                 self.status = True
                 print "SER--Connected to Arduino!"
@@ -52,10 +53,3 @@ class ArduinoInterface(object):
     def flush(self):
         self.ser.flushInput()
         self.ser.flushOutput()
-
-if __name__ == '__main__':
-    test = ArduinoInterface()
-    test.connect()
-    msg = raw_input()
-    test.write(msg)
-    test.read()
