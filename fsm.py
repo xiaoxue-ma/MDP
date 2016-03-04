@@ -256,7 +256,7 @@ class FastRunState(BaseState):
     only receive ack from robot
     """
     def __str__(self):
-        return "FastRunState"
+        return "run"
 
     def process_input(self,input_tuple):
         type,msg = input_tuple

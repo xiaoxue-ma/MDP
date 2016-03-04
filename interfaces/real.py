@@ -3,7 +3,7 @@ set of real device communication interfaces
 """
 import socket
 import serial
-from bluetooth import *
+# from bluetooth import *
 import time
 from base import Interface
 from common import PMessage
