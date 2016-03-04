@@ -29,7 +29,7 @@ class CentralController(StateMachine):
 
     _exploration_command_delay = 2
 
-    FAST_RUN_COMMAND_DELAY = 0.5 # in second
+    FAST_RUN_COMMAND_DELAY = 2 # in second
 
     def control_task(self):
         "central control"
