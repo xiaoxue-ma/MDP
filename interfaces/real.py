@@ -16,6 +16,13 @@ N7_MAC = "08:60:6E:A5:A5:86"
 BT_UUID = "00001101-0000-1000-8000-00805F9B34FB"
 BT_PORT = 4
 
+TO_SER = dict({PMessage.M_MOVE_FORWARD: "0", PMessage.M_TURN_RIGHT: "1", PMessage.M_TURN_LEFT: "2",
+               PMessage.M_TURN_BACK: "3", PMessage.M_START_EXPLORE: "4", PMessage.M_END_EXPLORE: "5",
+               PMessage.M_START_FASTRUN: "6", })
+FROM_SER = dict({"0": PMessage.M_MOVE_FORWARD, "1": PMessage.M_TURN_RIGHT, "2": PMessage.M_TURN_LEFT,
+                 "3": PMessage.M_TURN_BACK, "4": PMessage.M_START_EXPLORE, "5": PMessage.M_END_EXPLORE,
+                 "6": PMessage.M_START_FASTRUN, })
+
 
 class PCInterface(Interface):
     def __init__(self):
@@ -31,7 +38,7 @@ class PCInterface(Interface):
             print "WIFI--Connected to ", self.client_addr
             self.status = True
             # receive the first message from client, know the client address
-            #data, self.pcaddr = self.ipsock.recv(1024)
+            # data, self.pcaddr = self.ipsock.recv(1024)
         except Exception, e:
             print "WIFI--connection exception: %s" % str(e)
             self.status = False
@@ -103,18 +110,25 @@ class ArduinoInterface(Interface):
             msg = self.ser.readline()
             if msg != "":
                 print "SER--Read from Arduino: %s" % str(msg)
-                return msg
+                if len(msg) > 1:
+                    realmsg = PMessage(type=PMessage.T_MAP_UPDATE, msg=msg)
+                else:
+                    realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=FROM_SER.get(msg[0]))
+                return realmsg
         except Exception, e:
             print "SER--read exception: %s" % str(e)
-            self.reconnect()
+            # self.reconnect()
 
     def write(self, msg):
         try:
-            self.ser.write(msg + "|")
-            print "SER--Write to Arduino: %s" % str(msg)
+            msg = msg.render_msg()
+            realmsg = TO_SER.get(msg.get_msg())
+            if realmsg:
+                self.ser.write(realmsg)
+                print "SER--Write to Arduino: %s" % str(msg)
         except Exception, e:
             print "SER--write exception: %s" % str(e)
-            self.reconnect()
+            # self.reconnect()
 
 
 class AndroidInterface(Interface):
@@ -132,11 +146,11 @@ class AndroidInterface(Interface):
                               service_id=BT_UUID,
                               service_classes=[BT_UUID, SERIAL_PORT_CLASS],
                               profiles=[SERIAL_PORT_PROFILE],
-                              )
+            )
             self.client_sock, client_info = self.server_sock.accept()
 
             # if client_info[0] != N7_MAC:
-            #     print "BT--Unauthorized device, disconnecting..."
+            # print "BT--Unauthorized device, disconnecting..."
             #     return
 
             print("BT--Connected to %s on channel %s" % (str(client_info), str(port)))
