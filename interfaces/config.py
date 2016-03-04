@@ -1,5 +1,6 @@
 #Network conf
-WIFI_IP = "localhost"
+
+WIFI_IP = "192.168.1.1"
 WIFI_PORT = 3053
 N7_MAC = "08:60:6E:A5:A4:1E"
 BAUD = 115200
