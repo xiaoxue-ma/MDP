@@ -1,4 +1,5 @@
 from mock import *
+from real import *
 
 
 __all__ = ('get_pc_interface', 'get_arduino_interface', 'get_android_interface',)
@@ -15,4 +16,4 @@ def get_arduino_interface():
 
 
 def get_android_interface():
-    return MockAndroidInterface()
+    return AndroidInterface()

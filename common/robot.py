@@ -7,11 +7,11 @@ class RobotSettings():
     HEAD_COLOR = "white"
     NOTHING_DETECTED = -1
     SENSORS = [
-        {'pos':FRONT_LEFT,'range':4},# front left
-        {'pos':FRONT_RIGHT,'range':4}, # front right
-        {'pos':FRONT,'range':4}, # front middle
-        {'pos':LEFT,'range':3}, # left
-        {'pos':RIGHT,'range':3}, # right
+        {'pos':FRONT_LEFT,'range':2},# front left
+        {'pos':FRONT_RIGHT,'range':2}, # front right
+        {'pos':FRONT,'range':2}, # front middle
+        {'pos':LEFT,'range':4}, # left
+        {'pos':RIGHT,'range':2}, # right
     ]
 
 class RobotRef(RobotSettings,BasePublisher):
