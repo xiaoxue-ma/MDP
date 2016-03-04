@@ -12,8 +12,6 @@ class CentralController(StateMachine):
     """
     run control_task method to start running the controller
     """
-    _cur_state = None
-    _next_state = None
 
     _map_ref = None # internal map
     _robot = None
@@ -38,8 +36,7 @@ class CentralController(StateMachine):
             if (not self._input_q.empty()):
                 input_tuple = self._input_q.get_nowait()
                 if (not input_tuple): continue
-                self._cur_state = self._next_state
-                cmd_list,data_list = self._cur_state.process_input(input_tuple)
+                cmd_list,data_list = self._state.process_input(input_tuple)
                 if (cmd_list):
                     self._enqueue_list(self._cmd_out_q,cmd_list,True)
                 if (data_list):
@@ -54,7 +51,7 @@ class CentralController(StateMachine):
         print("Next state set to {}".format(str(state)))
         for q in self._data_out_qs:
             self._enqueue_list(q=q,list=[PMessage(type=PMessage.T_STATE_CHANGE,msg=str(state))])
-        self._next_state = state
+        self._state = state
 
     def update_remaining_explore_time(self,t):
         print("Exploration remaining time: {}".format(t))
@@ -101,7 +98,7 @@ class CentralController(StateMachine):
         self._explore_coverage = int(coverage_percent)
 
     def get_exploration_time_limit(self):
-            return self._explore_time_limit
+        return self._explore_time_limit
 
     def get_exploration_coverage_limit(self):
         return self._explore_coverage
@@ -115,6 +112,9 @@ class CentralController(StateMachine):
     def get_map_ref(self):
         return self._map_ref
 
+    def get_robot_ref(self):
+        return self._robot
+
     def load_map_from_file(self,filename):
         self._map_ref.load_map_from_file(filename)
 
@@ -123,8 +123,7 @@ class CentralController(StateMachine):
         self._robot.set_position(pos)
 
     def reset(self):
-        self._cur_state = ReadyState(machine=self)
-        self._next_state = self._cur_state
+        self._state = ReadyState(machine=self)
         self._map_ref = MapRef()
         self._robot = RobotRef()
         self._explore_algo = MazeExploreAlgo(robot=self._robot,map_ref=self._map_ref)

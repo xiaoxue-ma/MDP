@@ -31,6 +31,7 @@ class ClientSimulationApp(BaseObserver):
         map_ref = MapRef()
         robot = RobotRef()
         self._controller = AndroidController(map_ref=map_ref,robot_ref=robot)
+        self._controller.add_change_listener(self)
         # status text boxes
         self._info_frame =  Frame(master=root)
         self._info_frame.grid(row=0,column=0)
@@ -144,6 +145,8 @@ class ClientSimulationApp(BaseObserver):
         self._controller.save_map(map_file_path)
 
     def update(self,data=None):
+        if (data):
+            self._cur_info.config(text=data)
         self._explore_time_remain_label.config(text="Remaining time: {}".format(self._controller.get_exploration_remaining_time()))
         self._explore_coverage_label.config(text="Coverage: {}".format(self._controller.get_cur_coverage()))
 

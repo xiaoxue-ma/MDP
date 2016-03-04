@@ -40,7 +40,7 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
         _robot.add_change_listener(self)
         # init controller
         self._controller = ArduinoController(map_ref=_map_ref,robot_ref=_robot)
-
+        self._controller.add_change_listener(self)
         # init button
         self._control_frame = Frame(master=root)
         self._control_frame.grid(row=1,column=0)
@@ -78,6 +78,8 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
 
     def update(self,data=None):
         "update method as an observer"
+        if (data):
+            self._text_status.insert(END,data+"\n")
         pos = self._controller.get_robot_pos()
         ori = self._controller.get_robot_ori()
         self._label_position.config(text=self.ROBOT_POS_LABEL.format(pos[0],pos[1]))

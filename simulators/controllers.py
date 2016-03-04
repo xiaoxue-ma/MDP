@@ -39,7 +39,7 @@ class BaseSimulatorController():
     def get_server_port(self):
         raise NotImplementedError("server port not specified")
 
-class ArduinoController(BaseSimulatorController):
+class ArduinoController(BasePublisher,BaseSimulatorController):
     """
     controlling the internal logic of arduino simulator
     """
@@ -75,7 +75,7 @@ class ArduinoController(BaseSimulatorController):
                 objs = PMessage.load_messages_from_json(msg)
                 if (not objs): continue
                 for msg_obj in objs:
-                    print("received data: " + str(msg_obj))
+                    self.show_status("received data: " + str(msg_obj))
                     if (msg_obj.get_type()==PMessage.T_SET_ROBOT_POS):
                         x,y=msg_obj.get_msg().split(",")
                         self._map_ref.refresh()
@@ -84,6 +84,7 @@ class ArduinoController(BaseSimulatorController):
                         continue
                     instruction = self.decode_instruction(msg_obj)
                     if (instruction):
+                        self.show_status("Received instruction : {}".format(instruction))
                         self.execute_instruction(instruction)
                         if (self._sending_sensor_data):
                             time.sleep(self.SENSOR_DATA_DELAY)
@@ -118,6 +119,7 @@ class ArduinoController(BaseSimulatorController):
         self._robot.reset()
 
     def show_status(self,msg):
+        self.notify(data=msg)
         print(msg)
 
     def load_map(self,filename):
@@ -257,4 +259,5 @@ class AndroidController(BasePublisher,BaseSimulatorController):
         self._map_ref.set_cell_list(pos_list=obstacle_pos_list,value=MapRef.OBSTACLE)
 
     def show_status(self,msg):
+        self.notify(data=msg)
         print(msg)

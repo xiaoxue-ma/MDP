@@ -8,48 +8,33 @@ from common import *
 from common.timer import Timer
 from common.pmessage import PMessage
 from algorithms.shortest_path import AStarShortestPathAlgo
+from algorithms.maze_explore import MazeExploreAlgo
 
 class StateMachine():
     """
     Interface specification for State Machine
     """
-    @abstractmethod
-    def set_next_state(self,state_name):
-        raise NotImplementedError()
-    @abstractmethod
-    def move_robot(self,action):
-        raise NotImplementedError()
-    @abstractmethod
-    def update_map(self,sensor_values):
-        raise NotImplementedError()
-    @abstractmethod
-    def get_next_exploration_move(self):
-        raise NotImplementedError()
-    @abstractmethod
-    def is_map_fully_explored(self):
-        raise NotImplementedError()
-    @abstractmethod
-    def get_fast_run_commands(self):
-        raise NotImplementedError()
-    @abstractmethod
-    def is_robot_at_destination(self):
-        raise NotImplementedError()
-    @abstractmethod
-    def reset(self):
-        raise NotImplementedError()
-    @abstractmethod
-    def set_exploration_time_limit(self,time_limit):
-        raise NotImplementedError()
-    @abstractmethod
-    def set_exploration_coverage(self,coverage_percent):
-        raise  NotImplementedError()
+    _state = None # BaseState object
+
+    def set_next_state(self,st):
+        self._state = st
+
+    def get_map_ref(self):
+        raise NotImplementedError("get_map_ref not implemented")
+
+    def get_robot_ref(self):
+        raise NotImplementedError("get_robot_ref not implemented")
 
 class BaseState():
 
     _machine = None
+    _map_ref = None # MapRef object, obtained from machine
+    _robot_ref = None # RobotRef object, obtained from machine
 
     def __init__(self,machine,**kwargs):
         self._machine = machine
+        self._map_ref = self._machine.get_map_ref()
+        self._robot_ref = self._machine.get_robot_ref()
 
     @abstractmethod
     def process_input(self,input_tuple):
@@ -114,19 +99,28 @@ class ReadyState(BaseState):
         return [],[]
 
 
-class ExplorationState(BaseState):
+class ExplorationState(StateMachine,BaseState):
     """
     only accept sensor readings from arduino
     """
     timer = None
     _time_limit = 0
     _cmd_buffer = []
-
     # for time limited exploration only
     LIST_LEN_BIAS = 2
     STEP_TIME_BIAS = 0.2
     MAP_UPDATE_IN_POS_LIST = False # map update sent in a list of clear positions and a list of obstacle positions
     SEND_COVERAGE_UPDATE = False
+
+    def __init__(self,machine,**kwargs):
+        super(ExplorationState,self).__init__(machine,**kwargs)
+        self.set_next_state(ExplorationFirstRoundState(machine=self))
+
+    def get_map_ref(self):
+        return self._machine.get_map_ref()
+
+    def get_robot_ref(self):
+        return self._machine.get_robot_ref()
 
     def __str__(self):
         return "explore"
@@ -168,14 +162,19 @@ class ExplorationState(BaseState):
             self._machine.set_next_state(ExplorationDoneState(machine=self._machine))
             return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_END_EXPLORE)],\
                    [PMessage(type=PMessage.T_MAP_UPDATE,msg=map_update_to_send),coverage_msg]
-        else:
-            # get next move
-            command = self.get_next_move()
-            # command delay
-            time.sleep(self._machine.get_exploration_command_delay())
-            self._machine.move_robot(command)
-            return [PMessage(type=PMessage.T_COMMAND,msg=command)],\
-                   [PMessage(type=PMessage.T_MAP_UPDATE,msg=map_update_to_send),PMessage(type=PMessage.T_ROBOT_MOVE,msg=command),coverage_msg]
+        if (self.need_to_go_back()):
+            map_ref = self._machine.get_map_ref()
+            target_pos = map_ref.get_start_zone_center_pos()
+            algo =AStarShortestPathAlgo(map_ref=self._machine.get_map_ref(),target_pos=target_pos)
+            cmd_list = algo.get_shortest_path(robot_ori=self._machine.get_robot_ori(),robot_pos=self._machine.get_robot_pos())
+            if (cmd_list):
+                time_to_back = (len(cmd_list)+self.LIST_LEN_BIAS)*(self._machine.get_exploration_command_delay()+self.STEP_TIME_BIAS)
+                if (self.timer.get_remaining_time()>time_to_back):
+                    return self._machine.get_next_exploration_move()
+                else:
+                    self._cmd_buffer = cmd_list[1:]
+                    return cmd_list[0]
+
 
     def time_up(self):
         "action when time for exploration is up"
@@ -192,34 +191,45 @@ class ExplorationState(BaseState):
             (self.timer and not self.timer.is_timing() and self._machine.is_robot_at_start()) or\
             (self._machine.get_exploration_coverage_limit() and self._machine.get_current_exploration_coverage()>=self._machine.get_exploration_coverage_limit() and self._machine.is_robot_at_start())
 
-    def get_next_move(self):
-        "return a  command message"
-        # if there's command in the buffer, return it
-        if (self._cmd_buffer):
-            cmd = self._cmd_buffer[0]
-            self._cmd_buffer = self._cmd_buffer[1:]
-            return cmd
-
-        if (self.need_to_go_back()):
-            map_ref = self._machine.get_map_ref()
-            target_pos = map_ref.get_start_zone_center_pos()
-            algo =AStarShortestPathAlgo(map_ref=self._machine.get_map_ref(),target_pos=target_pos)
-            cmd_list = algo.get_shortest_path(robot_ori=self._machine.get_robot_ori(),robot_pos=self._machine.get_robot_pos())
-            if (cmd_list):
-                time_to_back = (len(cmd_list)+self.LIST_LEN_BIAS)*(self._machine.get_exploration_command_delay()+self.STEP_TIME_BIAS)
-                if (self.timer.get_remaining_time()>time_to_back):
-                    return self._machine.get_next_exploration_move()
-                else:
-                    self._cmd_buffer = cmd_list[1:]
-                    return cmd_list[0]
-        else:
-            return self._machine.get_next_exploration_move()
-
     def need_to_go_back(self):
         "need to go back if half of the time limit has passed or coverage limit has reached"
         return (self.timer and self.timer.get_time_passed() >= (self._time_limit-3*self._machine.get_exploration_command_delay())/2.0 or
         self._machine.get_exploration_coverage_limit() and self._machine.get_current_exploration_coverage()>=self._machine.get_exploration_coverage_limit())
 
+    def get_next_exploration_move(self):
+        pass
+
+class ExplorationFirstRoundState(BaseState):
+    """
+    Explore along the wall,only return commands and robot move update
+    """
+    _explore_algo = None
+
+    def __init__(self,machine,**kwargs):
+        super(ExplorationFirstRoundState,self).__init__(machine=machine,**kwargs)
+        self._explore_algo = MazeExploreAlgo(robot=self._machine.get_robot_ref(),map_ref=self._machine.get_map_ref())
+
+    def process_input(self,input_tuple):
+        # get next move
+        command = self._explore_algo.get_next_move()
+        # time.sleep(self._machine.get_exploration_command_delay())
+        self._machine.move_robot(command)
+        return [PMessage(type=PMessage.T_COMMAND,msg=command)],\
+               [PMessage(type=PMessage.T_ROBOT_MOVE,msg=command)]
+
+class ExplorationSecondRoundState(BaseState):
+    """
+    Explore whatever hasn't been explored
+    """
+    def process_input(self,input_tuple):
+        pass
+
+class ExplorationGoBackState(BaseState):
+    """
+    Go back to start position
+    """
+    def process_input(self,input_tuple):
+        pass
 
 class ExplorationDoneState(BaseState):
     """
