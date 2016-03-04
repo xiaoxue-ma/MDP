@@ -2,6 +2,7 @@ import serial
 from config import *
 import time
 
+
 class ArduinoInterface(object):
     def __init__(self):
         self.status = False
