@@ -190,9 +190,10 @@ class AndroidInterface(Interface):
 
     def write(self, msg):
         try:
-            msg = msg.render_msg()
-            self.client_sock.send(msg)
-            print "BT--Write to Android: %s" % str(msg)
+            if not msg.get_msg() == "exploreend":
+                msg = msg.render_msg()
+                self.client_sock.send(msg)
+                print "BT--Write to Android: %s" % str(msg)
         except Exception, e:
             print "BT--write exception: %s" % str(e)
             # self.reconnect()
