@@ -15,10 +15,9 @@ def parse_to_pm(msg):
 
 
 def parse_from_pm(msg):
-    msg = msg.render_msg()
     realmsg = real.TO_SER.get(msg.get_msg())
     if realmsg:
-        print "SER--Write to Arduino: %s" % str(msg)
+        print "SER--Write to Arduino: %s" % str(realmsg)
 
 
 if __name__ == "__main__":
