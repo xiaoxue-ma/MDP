@@ -125,7 +125,6 @@ class ArduinoInterface(Interface):
 
     def write(self, msg):
         try:
-            msg = msg.render_msg()
             realmsg = TO_SER.get(msg.get_msg())
             if realmsg:
                 self.ser.write(realmsg)
