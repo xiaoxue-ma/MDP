@@ -112,9 +112,13 @@ class ArduinoInterface(Interface):
                 print "SER--Read from Arduino: %s" % str(msg)
                 if len(msg) > 1:
                     realmsg = PMessage(type=PMessage.T_MAP_UPDATE, msg=msg)
+                    return realmsg
                 else:
-                    realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=FROM_SER.get(msg[0]))
-                return realmsg
+                    msg = msg[0]
+                    if msg < '4':
+                        realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=FROM_SER.get(msg[0]))
+                        return realmsg
+
         except Exception, e:
             print "SER--read exception: %s" % str(e)
             # self.reconnect()
@@ -159,7 +163,7 @@ class AndroidInterface(Interface):
         except Exception, e:
             print "BT--connection exception: %s" % str(e)
             self.status = False
-            self.reconnect()
+            # self.reconnect()
 
     def disconnect(self):
         try:
@@ -183,7 +187,7 @@ class AndroidInterface(Interface):
             return (self.name, PMessage(json_str=msg))
         except Exception, e:
             print "BT--read exception: %s" % str(e)
-            self.reconnect()
+            # self.reconnect()
 
     def write(self, msg):
         try:
@@ -192,4 +196,4 @@ class AndroidInterface(Interface):
             print "BT--Write to Android: %s" % str(msg)
         except Exception, e:
             print "BT--write exception: %s" % str(e)
-            self.reconnect()
+            # self.reconnect()
