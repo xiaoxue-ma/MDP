@@ -4,6 +4,7 @@ set of real device communication interfaces
 import socket
 import serial
 from bluetooth import *
+import time
 from base import Interface
 from common import PMessage
 
@@ -76,6 +77,7 @@ class ArduinoInterface(Interface):
     def connect(self):
         try:
             self.ser = serial.Serial(SER_PORT, SER_BAUD, timeout=3)
+            time.sleep(2)
             if self.ser is not None:
                 self.status = True
                 print "SER--Connected to Arduino!"
