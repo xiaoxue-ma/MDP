@@ -111,8 +111,9 @@ class ArduinoInterface(Interface):
             if msg != "":
                 print "SER--Read from Arduino: %s" % str(msg)
                 if len(msg) > 1:
-                    realmsg = PMessage(type=PMessage.T_MAP_UPDATE, msg=msg)
-                    return realmsg
+                    if msg[0] != 'T':
+                        realmsg = PMessage(type=PMessage.T_MAP_UPDATE, msg=msg)
+                        return realmsg
                 else:
                     msg = msg[0]
                     if msg < '4':
