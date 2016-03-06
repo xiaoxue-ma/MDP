@@ -29,7 +29,7 @@ class ArduinoInterface(Interface):
         self.status = False
         self.name = "arduino"
 
-    def _connect(self):
+    def connect(self):
         try:
             self.ser = serial.Serial(SER_PORT, SER_BAUD, timeout=3)
             time.sleep(2)
@@ -41,14 +41,17 @@ class ArduinoInterface(Interface):
             self.status = False
             # self.reconnect()
 
-    def _disconnect(self):
+    def is_ready(self):
+        return self.status
+
+    def disconnect(self):
         if self.ser.is_open:
             self.ser.close()
             self.status = False
             print "SER--Disconnected to Arduino!"
 
 
-    def _read(self):
+    def read(self):
         try:
             msg = self.ser.readline()
             if msg != "":
@@ -67,7 +70,7 @@ class ArduinoInterface(Interface):
             print "SER--read exception: %s" % str(e)
             # self.reconnect()
 
-    def _write(self, msg):
+    def write(self, msg):
         try:
             realmsg = TO_SER.get(msg.get_msg())
             if realmsg:
@@ -83,7 +86,7 @@ class AndroidInterface(Interface):
         self.status = False
         self.name = "android"
 
-    def _connect(self):
+    def connect(self):
         try:
             self.server_sock = BluetoothSocket(RFCOMM)
             self.server_sock.bind(("", BT_PORT))
@@ -108,7 +111,10 @@ class AndroidInterface(Interface):
             self.status = False
             # self.reconnect()
 
-    def _disconnect(self):
+    def is_ready(self):
+        return self.status
+
+    def disconnect(self):
         try:
             self.client_sock.close()
             self.server_sock.close()
@@ -118,7 +124,7 @@ class AndroidInterface(Interface):
             print "BT--disconnection exception: %s" % str(e)
 
 
-    def _read(self):
+    def read(self):
         try:
             msg = self.client_sock.recv(2048)
             print "BT--Read from Android: %s" % str(msg)
@@ -127,7 +133,7 @@ class AndroidInterface(Interface):
             print "BT--read exception: %s" % str(e)
             # self.reconnect()
 
-    def _write(self, msg):
+    def write(self, msg):
         try:
             if not msg.get_msg() == "exploreend":
                 msg = msg.render_msg()
