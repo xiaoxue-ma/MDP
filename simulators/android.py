@@ -30,7 +30,7 @@ class ClientSimulationApp(BaseObserver):
         # init controller
         map_ref = MapRef()
         robot = RobotRef()
-        self._controller = AndroidController(map_ref=map_ref,robot_ref=robot)
+        self._controller = self.get_controller_class()(map_ref=map_ref,robot_ref=robot)
         self._controller.add_change_listener(self)
         # status text boxes
         self._info_frame =  Frame(master=root)
@@ -54,6 +54,9 @@ class ClientSimulationApp(BaseObserver):
         self._init_map_frame(fr=self._map_frame,map_ref=map_ref,robot_ref=robot)
         # init controller
         self._controller.run()
+
+    def get_controller_class(self):
+        return AndroidController
 
     def _init_info_frame(self,fr):
         self._text = Text(master=fr,height=4)
@@ -157,4 +160,5 @@ def main():
     window.title("Android")
     window.mainloop()
 
-main()
+if __name__=="__main__":
+    main()

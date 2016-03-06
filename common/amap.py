@@ -1,5 +1,5 @@
 import os
-import re
+import math
 from Tkinter import *
 from abc import ABCMeta,abstractmethod
 from bitarray import bitarray
@@ -193,10 +193,13 @@ class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
         self.set_cell_list(indexes,value=MapSetting.CLEAR,notify=False)
         self.notify()
 
+    def is_fully_explored(self):
+        return self.get_unknown_percentage()==0
+
     def get_unknown_percentage(self):
         map_size = self.size_y * self.size_x
         num_unknown_cells = sum([1 for x in range(self.size_x) for y in range(self.size_y) if self.get_cell(x,y)==self.UNKNOWN])
-        return int(100.0*num_unknown_cells/map_size)
+        return int(math.ceil(100.0*num_unknown_cells/map_size))
 
     def refresh(self):
         self.notify()

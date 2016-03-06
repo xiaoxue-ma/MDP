@@ -24,3 +24,19 @@ class MinQueue():
 
     def is_empty(self):
         return len(self._list)==0
+
+# unused
+def synchronized(lock):
+    """ Synchronization decorator. """
+
+    def wrap(f):
+        def newFunction(*args, **kw):
+            lock.acquire()
+            print("lock acquired for {}".format(f))
+            try:
+                return f(*args, **kw)
+            finally:
+                lock.release()
+                print("lock released for {}".format(f))
+        return newFunction
+    return wrap

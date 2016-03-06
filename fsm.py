@@ -10,7 +10,7 @@ from common.pmessage import PMessage
 from algorithms.shortest_path import AStarShortestPathAlgo
 from algorithms.maze_explore import MazeExploreAlgo
 
-class StateMachine():
+class StateMachine(object):
     """
     Interface specification for State Machine
     """
@@ -25,7 +25,7 @@ class StateMachine():
     def get_robot_ref(self):
         raise NotImplementedError("get_robot_ref not implemented")
 
-class BaseState():
+class BaseState(object):
 
     _machine = None
     _map_ref = None # MapRef object, obtained from machine
@@ -51,7 +51,7 @@ class ReadyState(BaseState):
     def process_input(self,input_tuple):
         "only listen for explore, fast run and move commands"
         type,msg = input_tuple
-        if (type!=ANDROID_LABEL):
+        if (type not in CMD_SOURCES):
             return [],[]
         # read android command
         if (msg.get_type()==PMessage.T_COMMAND):
@@ -101,7 +101,8 @@ class ReadyState(BaseState):
 
 class ExplorationState(StateMachine,BaseState):
     """
-    only accept sensor readings from arduino
+    This state contains three substates: ExplorationFirstRound, ExplorationSecondRount, ExplorationThirdRound
+    Will make change to RobotRef and MapRef
     """
     timer = None
     _time_limit = 0
@@ -128,28 +129,22 @@ class ExplorationState(StateMachine,BaseState):
     def process_input(self,input_tuple):
         type,msg = input_tuple
         # run timer if needed
-        if (not self.timer):
-            self._time_limit = self._machine.get_exploration_time_limit()
-            if (self._time_limit):
-                self.timer = Timer(limit=self._time_limit,end_callback=self.time_up,interval_callback=self.time_tick)
-                self.timer.start()
+        if (not self.timer and self._machine.get_exploration_time_limit()):
+            self.setup_timer()
         # check coverage if needed
-        current_coverage = self._machine.get_current_exploration_coverage()
-        if (self.SEND_COVERAGE_UPDATE):
-            coverage_msg = PMessage(type=PMessage.T_CUR_EXPLORE_COVERAGE,msg=current_coverage)
-        else:
-            coverage_msg = None
+        current_coverage = 100 - self._map_ref.get_unknown_percentage()
+        coverage_msg = PMessage(type=PMessage.T_CUR_EXPLORE_COVERAGE,msg=current_coverage) if self.SEND_COVERAGE_UPDATE else None
         # android "end explore" command
-        if (type==ANDROID_LABEL and msg.get_type()==PMessage.T_COMMAND and msg.get_msg()==PMessage.M_END_EXPLORE):
-            # stop timer and transit state
-            if (hasattr(self,"timer") and self.timer and self.timer.is_timing()):
-                self.timer.shutdown()
-            self._machine.set_next_state(ExplorationDoneState(machine=self._machine))
+        if (type in CMD_SOURCES and msg.get_type()==PMessage.T_COMMAND and msg.get_msg()==PMessage.M_END_EXPLORE):
+            self.end_exploration()
             return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_END_EXPLORE)],\
                    [coverage_msg]
-        elif(type==ANDROID_LABEL and msg.get_type()==PMessage.T_SET_EXPLORE_SPEED):
+        elif(type in CMD_SOURCES and msg.get_type()==PMessage.T_SET_EXPLORE_SPEED):
+            #TODO: change this deprecated method
             sec_per_step = float(msg.get_msg())
             self._machine.set_exploration_command_delay(sec_per_step)
+            return [],[]
+
         # update from arduino
         if (type!=ARDUINO_LABEL):
             return [],[]
@@ -157,24 +152,33 @@ class ExplorationState(StateMachine,BaseState):
         sensor_values = map(int,msg.get_msg().split(","))
         clear_pos_list,obstacle_pos_list = self._machine.update_map(sensor_values)
         map_update_to_send = [clear_pos_list,obstacle_pos_list] if self.MAP_UPDATE_IN_POS_LIST else msg.get_msg()
-        # check whether exploration is finished
-        if (self.can_end_exploration()):
-            self._machine.set_next_state(ExplorationDoneState(machine=self._machine))
-            return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_END_EXPLORE)],\
-                   [PMessage(type=PMessage.T_MAP_UPDATE,msg=map_update_to_send),coverage_msg]
-        if (self.need_to_go_back()):
-            map_ref = self._machine.get_map_ref()
-            target_pos = map_ref.get_start_zone_center_pos()
-            algo =AStarShortestPathAlgo(map_ref=self._machine.get_map_ref(),target_pos=target_pos)
-            cmd_list = algo.get_shortest_path(robot_ori=self._machine.get_robot_ori(),robot_pos=self._machine.get_robot_pos())
-            if (cmd_list):
-                time_to_back = (len(cmd_list)+self.LIST_LEN_BIAS)*(self._machine.get_exploration_command_delay()+self.STEP_TIME_BIAS)
-                if (self.timer.get_remaining_time()>time_to_back):
-                    return self._machine.get_next_exploration_move()
-                else:
-                    self._cmd_buffer = cmd_list[1:]
-                    return cmd_list[0]
 
+        if (not self.is_going_back()):
+            # check whether exploration is finished
+            if (self.can_end_exploration()):
+                print("Can end exploration (from explorationstate main)")
+                if (self._robot_ref.get_position()!=self._map_ref.get_start_zone_center_pos()):
+                    self.set_next_state(ExplorationGoBackState(machine=self))
+                else:
+                    self._machine.set_next_state(ExplorationDoneState(machine=self._machine))
+                    return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_END_EXPLORE)],\
+                           [PMessage(type=PMessage.T_MAP_UPDATE,msg=map_update_to_send),coverage_msg]
+            if (self.need_to_go_back()):
+                self.set_next_state(ExplorationGoBackState(machine=self))
+
+        cmd_list,data_list = self._state.process_input(input_tuple=input_tuple)
+        data_list = [PMessage(type=PMessage.T_MAP_UPDATE,msg=map_update_to_send),coverage_msg] + data_list
+
+        return cmd_list,data_list
+
+    def setup_timer(self):
+        self.timer = Timer(limit=self._machine.get_exploration_time_limit()
+                           ,end_callback=self.time_up,interval_callback=self.time_tick)
+        self.timer.start()
+
+    def stop_timer(self):
+        if (hasattr(self,"timer") and self.timer and self.timer.is_timing()):
+            self.timer.shutdown()
 
     def time_up(self):
         "action when time for exploration is up"
@@ -185,23 +189,30 @@ class ExplorationState(StateMachine,BaseState):
     def time_tick(self,time_remained):
         self._machine.update_remaining_explore_time(time_remained)
 
+    def is_going_back(self):
+        return self._state.__class__ == ExplorationGoBackState
+
     def can_end_exploration(self):
         "can end exploration when map is fully explored or time is up and robot is back at start point, or coverage limit is reached and robot is at start"
-        return self._machine.is_map_fully_explored() or\
+        return self._map_ref.is_fully_explored() or\
             (self.timer and not self.timer.is_timing() and self._machine.is_robot_at_start()) or\
             (self._machine.get_exploration_coverage_limit() and self._machine.get_current_exploration_coverage()>=self._machine.get_exploration_coverage_limit() and self._machine.is_robot_at_start())
+
+    def end_exploration(self):
+        self.stop_timer()
+        self._machine.set_next_state(ExplorationDoneState(machine=self._machine))
 
     def need_to_go_back(self):
         "need to go back if half of the time limit has passed or coverage limit has reached"
         return (self.timer and self.timer.get_time_passed() >= (self._time_limit-3*self._machine.get_exploration_command_delay())/2.0 or
         self._machine.get_exploration_coverage_limit() and self._machine.get_current_exploration_coverage()>=self._machine.get_exploration_coverage_limit())
 
-    def get_next_exploration_move(self):
-        pass
 
 class ExplorationFirstRoundState(BaseState):
     """
+    Substate of ExplorationState
     Explore along the wall,only return commands and robot move update
+    will change robotRef
     """
     _explore_algo = None
 
@@ -212,24 +223,62 @@ class ExplorationFirstRoundState(BaseState):
     def process_input(self,input_tuple):
         # get next move
         command = self._explore_algo.get_next_move()
-        # time.sleep(self._machine.get_exploration_command_delay())
-        self._machine.move_robot(command)
+        self._robot_ref.execute_command(command)
+        if(self._robot_ref.get_position()==self._map_ref.get_start_zone_center_pos() and self._map_ref.get_unknown_percentage()<50):
+            self._machine.set_next_state(ExplorationSecondRoundState(machine=self._machine))
         return [PMessage(type=PMessage.T_COMMAND,msg=command)],\
                [PMessage(type=PMessage.T_ROBOT_MOVE,msg=command)]
 
 class ExplorationSecondRoundState(BaseState):
     """
+    Substate of ExplorationState
     Explore whatever hasn't been explored
+    will change robotRef
     """
     def process_input(self,input_tuple):
-        pass
+        #TODO: make the robot explore unexplored area
+        self._machine.set_next_state(ExplorationGoBackState(machine=self._machine))
+        return [],[]
 
 class ExplorationGoBackState(BaseState):
     """
-    Go back to start position
+    Substate of ExplorationState
+    for going back to start position
+    machine must be ExplorationState object
+    no change to robotRef and mapRef
     """
+    _cmd_buffer = []
+    started_go_back = False
+
     def process_input(self,input_tuple):
-        pass
+        if (self.is_going_back_finished()):
+            self._machine.end_exploration()
+            return [],[]
+        else:
+            if (not self.is_on_going_back()):
+                self.started_go_back = True
+                self._cmd_buffer = self.get_go_back_cmd_list()
+            move = self.dequeue_buffer()
+            self._robot_ref.execute_command(move)
+            return [PMessage(type=PMessage.T_COMMAND,msg=move)],[PMessage(type=PMessage.T_ROBOT_MOVE,msg=move)]
+
+    def is_going_back_finished(self):
+        return self.started_go_back==True and not self._cmd_buffer
+
+    def is_on_going_back(self):
+        return self.started_go_back==True and self._cmd_buffer
+
+    def get_go_back_cmd_list(self):
+        map_ref = self._map_ref
+        target_pos = map_ref.get_start_zone_center_pos()
+        algo =AStarShortestPathAlgo(map_ref=map_ref,target_pos=target_pos)
+        return algo.get_shortest_path(robot_ori=self._robot_ref.get_orientation(),robot_pos=self._robot_ref.get_position())
+
+    def dequeue_buffer(self):
+        if (not self._cmd_buffer): raise Exception("buffer is empty, cannot dequeue")
+        to_return = self._cmd_buffer[0]
+        self._cmd_buffer = self._cmd_buffer[1:]
+        return to_return
 
 class ExplorationDoneState(BaseState):
     """
@@ -240,25 +289,29 @@ class ExplorationDoneState(BaseState):
 
     def process_input(self,input_tuple):
         type,msg = input_tuple
-        if (type ==ANDROID_LABEL and msg.get_msg()==PMessage.M_START_FASTRUN):
+        if (type in CMD_SOURCES and msg.get_msg()==PMessage.M_START_FASTRUN):
             # get the fast run commands
-            cmd_list = self._machine.get_fast_run_commands()
             self._machine.set_next_state(FastRunState(machine=self._machine))
-            reply_commands = [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_START_FASTRUN)]
-            reply_commands.extend([PMessage(type=PMessage.T_COMMAND,msg=cmd) for cmd in cmd_list])
-            return reply_commands,\
-                   [PMessage(type=PMessage.T_STATE_CHANGE,msg=msg.get_msg())]
+            return self.get_commands_for_fastrun(),\
+                   []
 
-        elif (type==ANDROID_LABEL and msg.get_msg()==PMessage.M_RESET):
+        elif (type in CMD_SOURCES and msg.get_msg()==PMessage.M_RESET):
             self._machine.reset()
             self._machine.set_next_state(ReadyState(machine=self._machine))
-            return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_RESET)],[PMessage(type=PMessage.T_STATE_CHANGE,msg=PMessage.M_RESET)]
-        elif (type==ANDROID_LABEL and msg.get_type()==PMessage.T_COMMAND and msg.get_msg() in PMessage.M_MOVE_INSTRUCTIONS):
+            return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_RESET)],[]
+
+        elif (type in CMD_SOURCES and msg.get_type()==PMessage.T_COMMAND and msg.get_msg() in PMessage.M_MOVE_INSTRUCTIONS):
             # simple robot move
             self._machine.move_robot(msg.get_msg())
             return [msg],[PMessage(type=PMessage.T_ROBOT_MOVE,msg=msg.get_msg())]
+
         else:
             return [],[]
+
+    def get_commands_for_fastrun(self):
+        "return a list of command PMessage"
+        cmd_list = self._machine.get_fast_run_commands()
+        return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_START_FASTRUN)] + [PMessage(type=PMessage.T_COMMAND,msg=cmd) for cmd in cmd_list]
 
 
 class FastRunState(BaseState):
@@ -275,7 +328,7 @@ class FastRunState(BaseState):
             self._machine.move_robot(msg.get_msg())
             if (self._machine.is_robot_at_destination()):
                 self._machine.set_next_state(EndState(machine=self._machine))
-                return [],[PMessage(type=PMessage.T_ROBOT_MOVE,msg=msg.get_msg()),PMessage(type=PMessage.T_STATE_CHANGE,msg=PMessage.M_REACH_END)]
+                return [],[PMessage(type=PMessage.T_ROBOT_MOVE,msg=msg.get_msg())]
             else:
                 return [],[PMessage(type=PMessage.T_ROBOT_MOVE,msg=msg.get_msg())]
         else:
@@ -290,9 +343,9 @@ class EndState(BaseState):
 
     def process_input(self,input_tuple):
         type,msg = input_tuple
-        if (type==ANDROID_LABEL and msg.get_msg()==PMessage.M_RESET):
+        if (type in CMD_SOURCES and msg.get_msg()==PMessage.M_RESET):
             self._machine.reset()
             self._machine.set_next_state(ReadyState(machine=self._machine))
-            return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_RESET)],[PMessage(type=PMessage.T_STATE_CHANGE,msg=PMessage.M_RESET)]
+            return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_RESET)],[]
         else:
             return [],[]

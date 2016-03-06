@@ -4,8 +4,12 @@ testing MapIO loading and exporting
 import os
 import random
 import sys
+import time
+from thread import start_new_thread
+from threading import Lock,Thread
 from common.amap import BitMapIOMixin,TextMapIOMixin,MapRef,MapSetting
 from common.network import SocketServer
+from common.utils import synchronized
 
 x_len = 15
 y_len = 20
@@ -49,4 +53,32 @@ def print_2d(arr):
             sys.stdout.write("{},".format(arr[y][x]))
         print()
 
-main()
+class Network():
+    _lock = Lock()
+    @synchronized(_lock)
+    def read(self):
+        print("Read data start")
+        time.sleep(0.2)
+        print("Read data finish")
+
+    @synchronized(_lock)
+    def write(self):
+        print("write data start")
+        time.sleep(0.2)
+        print("write data finish")
+
+def test_multithread():
+    network = Network()
+    t1 =Thread(target=network.read)
+    t1.start()
+    t2 = Thread(target=network.write)
+    t2.start()
+    t3 = Thread(target=network.write)
+    t3.start()
+    t4 = Thread(target=network.write)
+    t4.start()
+    while True:
+        pass
+
+
+test_multithread()

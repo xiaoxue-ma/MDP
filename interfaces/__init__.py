@@ -1,6 +1,8 @@
 from mock import *
-from real import *
-
+try:
+    from real import *
+except:
+    print("package not ready for real interfaces")
 
 __all__ = ('get_pc_interface', 'get_arduino_interface', 'get_android_interface',)
 
@@ -16,4 +18,4 @@ def get_arduino_interface():
 
 
 def get_android_interface():
-    return AndroidInterface()
+    return MockAndroidInterface()

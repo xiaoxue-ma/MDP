@@ -58,6 +58,7 @@ class RobotRef(RobotSettings,BasePublisher):
         elif (command==PMessage.M_TURN_LEFT): self.turn_left()
         elif(command==PMessage.M_MOVE_FORWARD): self.move_forward()
         elif(command==PMessage.M_TURN_BACK): self.turn_back()
+        else:print("Command {} is not a valid command for robot".format(command))
 
     def get_sensor_readings(self,map_ref):
         "return a list of numbers"

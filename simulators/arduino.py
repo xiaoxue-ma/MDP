@@ -37,7 +37,7 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
         # add this app as the listener of robot
         _robot = RobotRef()
         self._robotUI = RobotUI(robot=_robot,cells=self._map_ui.get_cells())
-        _robot.add_change_listener(self)
+        #_robot.add_change_listener(self)
         # init controller
         self._controller = ArduinoController(map_ref=_map_ref,robot_ref=_robot)
         self._controller.add_change_listener(self)

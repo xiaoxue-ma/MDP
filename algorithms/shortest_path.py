@@ -1,5 +1,5 @@
 from common import *
-from common.pq import MinQueue
+from common.utils import MinQueue
 from common.amap import MapRef
 
 class AStarShortestPathAlgo():

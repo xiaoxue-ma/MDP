@@ -43,6 +43,7 @@ class CentralController(StateMachine):
                     for q in self._data_out_qs:
                         self._enqueue_list(q,data_list)
 
+    # deprecated
     def set_exploration_command_delay(self,delay):
         self._exploration_command_delay=delay
         print("Exploration delay set to {} secs per step".format(delay))
@@ -70,14 +71,6 @@ class CentralController(StateMachine):
 
     def get_next_exploration_move(self):
         return self._explore_algo.get_next_move()
-
-    def is_map_fully_explored(self):
-        "fully explored if the robot has explored the end zone and it has returned to start position"
-        if (self._robot.get_position()==self._map_ref.get_start_zone_center_pos()):
-            x,y=self._map_ref.get_end_zone_center_pos()
-            if (self._map_ref.get_cell(x,y)==MapRef.CLEAR):
-                return True
-        return False
 
     def get_fast_run_commands(self):
         fastrun_algo = AStarShortestPathAlgo(map_ref=self._map_ref,target_pos=self._map_ref.get_end_zone_center_pos())
@@ -139,19 +132,16 @@ class CentralController(StateMachine):
     def update(self):
         pass
 
+    # allow delay is deprecated
     def _enqueue_list(self,q,list,allow_delay=False):
         "enqueue list items on another thread"
         start_new_thread(self._enqueue_list_internal,(q,list,allow_delay,))
 
     def _enqueue_list_internal(self,q,list,allow_delay=False):
         "thread task"
-        if (len(list)==1 and list[0]):
-            q.put_nowait(list[0])
-        else:
-            for item in list:
-                if (item):
-                    q.put_nowait(item)
-                    if (allow_delay): time.sleep(self.FAST_RUN_COMMAND_DELAY)
+        for item in list:
+            if (item):
+                q.put_nowait(item)
 
     def get_robot_pos(self):
         return self._robot.get_position()

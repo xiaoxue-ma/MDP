@@ -43,7 +43,7 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
     """
     controlling the internal logic of arduino simulator
     """
-    SENSOR_DATA_DELAY = 0
+    EXECUTION_DELAY = 0.2
     MAP_FILE_NAME = "map-1.bin"
     VALID_CELL_VALUE = MapRef.VALID_CELL_VALUES
     VALID_INSTRUCTIONS = [PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT,PMessage.M_TURN_RIGHT,PMessage.M_START_EXPLORE,PMessage.M_START_FASTRUN,PMessage.M_RESET]
@@ -62,7 +62,6 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
     def send_sensor_data(self):
         "send sensor reading to client"
         readings = self._robot.get_sensor_readings(self._map_ref)
-        self.show_status(str(readings))
         self.send_data(type=PMessage.T_MAP_UPDATE,
                        data=",".join([str(i) for i in readings]))
         self.show_status("Readings sent")
@@ -84,10 +83,9 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
                         continue
                     instruction = self.decode_instruction(msg_obj)
                     if (instruction):
-                        self.show_status("Received instruction : {}".format(instruction))
+
                         self.execute_instruction(instruction)
                         if (self._sending_sensor_data):
-                            time.sleep(self.SENSOR_DATA_DELAY)
                             self.send_sensor_data()
                         if (self._sending_move_ack):
                             self.send_data(type=PMessage.T_ROBOT_MOVE,data=instruction)
@@ -111,6 +109,8 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
         elif (instruct==PMessage.M_END_EXPLORE): self._sending_sensor_data = False
         elif(instruct==PMessage.M_START_FASTRUN): self._sending_move_ack=True
         elif(instruct==PMessage.M_RESET):self.reset()
+        # simulate the delay in real execution
+        time.sleep(self.EXECUTION_DELAY)
 
     def reset(self):
         self._sending_sensor_data = False
@@ -209,7 +209,6 @@ class AndroidController(BasePublisher,BaseSimulatorController):
         self.show_status("Map saved")
 
     def start_fast_run(self):
-        # compute run commands
         self.send_command(PMessage.M_START_FASTRUN)
 
     def reset(self,send_command=True):
@@ -261,3 +260,7 @@ class AndroidController(BasePublisher,BaseSimulatorController):
     def show_status(self,msg):
         self.notify(data=msg)
         print(msg)
+
+class PCController(AndroidController):
+    def get_server_port(self):
+        return PC_SERVER_PORT

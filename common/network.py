@@ -1,24 +1,32 @@
 from abc import ABCMeta, abstractmethod
 from thread import start_new_thread
+from threading import Lock
+from common.utils import synchronized
 import socket
 import time
 
 
-class BaseNetworkInterface():
+class BaseNetworkInterface(object):
     def __init__(self):
         pass
 
     __metaclass__ = ABCMeta
 
     _buffer = ''  # temporary storage for data received
+    _lock = Lock()
 
     RECV_VALUE = 2048  # number of bytes to receive at one time
 
+    #@synchronized(_lock)
     def start(self, noblock=False):
         if (noblock):
             start_new_thread(self._internal_start, ())
         else:
             self._internal_start()
+
+    def close(self):
+        #TODO: implement something here
+        pass
 
     @abstractmethod
     def _internal_start(self):
