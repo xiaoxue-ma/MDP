@@ -62,12 +62,12 @@ class ArduinoInterface(Interface):
                 if len(msg) > 1:
                     if msg[0] != 'T':
                         realmsg = PMessage(type=PMessage.T_MAP_UPDATE, msg=msg)
-                        return realmsg
+                        return (self.name,realmsg)
                 else:
                     msg = msg[0]
                     if msg < '4':
                         realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=FROM_SER.get(msg[0]))
-                        return realmsg
+                        return (self.name,realmsg)
 
         except Exception, e:
             print "SER--read exception: %s" % str(e)
@@ -87,6 +87,7 @@ class ArduinoInterface(Interface):
 class AndroidInterface(Interface):
 
     name = ANDROID_LABEL
+    _write_delay = 1
 
     def __init__(self):
         super(AndroidInterface,self).__init__()
@@ -139,11 +140,14 @@ class AndroidInterface(Interface):
             print "BT--read exception: %s" % str(e)
             # self.reconnect()
 
+
     def _write(self, msg):
         try:
-            if not msg.get_msg() == "exploreend":
-                msg = msg.render_msg()
-                self.client_sock.send(msg)
-                print "BT--Write to Android: %s" % str(msg)
+            if msg.get_msg() == "exploreend":
+                msg._msg = "ee"
+            msg = msg.render_msg()
+            self.client_sock.send(msg)
+            time.sleep(self._write_delay)
+            print "BT--Write to Android: %s" % str(msg)
         except Exception, e:
             print "BT--write exception: %s" % str(e)

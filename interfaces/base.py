@@ -70,6 +70,7 @@ class SocketServerInterface(Interface):
         self._server = SocketServer(addr=self._server_ip, port=self._server_port)
 
     def connect(self):
+        print("waiting to connect to {}".format(self._name))
         self._server.start()
         self._ready = True
         print("Connected to {} at {}".format(self._name, self._server.get_client_addr()))
