@@ -1,5 +1,6 @@
 from common import *
 from common.popattern import BasePublisher
+from copy import copy
 from common.amap import *
 
 class RobotSettings():
@@ -120,6 +121,18 @@ class RobotRef(RobotSettings,BasePublisher):
 
         return all_clear_list,all_obstacle_list
 
+    def get_action_utility_points(self,action,map_ref):
+        "return the number of grids the robot can explore should it take the given action"
+        num_sensors = len(self.SENSORS)
+        robot_copy = copy(self)
+        robot_copy.execute_command(action)
+        robot_copy.execute_command(PMessage.M_MOVE_FORWARD)
+        clear_ls,obstacle_ls = robot_copy.sense_area([self.NOTHING_DETECTED]*num_sensors)
+        utility_point = 0
+        for x,y in clear_ls:
+            if (not map_ref.is_out_of_arena(x,y) and map_ref.get_cell(x,y)==map_ref.UNKNOWN):
+                utility_point += 1
+        return utility_point
 
     def get_orientation(self):
         return self._ori

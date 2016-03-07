@@ -1,6 +1,7 @@
 from common import *
 from common.amap import MapRef
 from common.pmessage import PMessage
+import random
 
 class MazeExploreAlgo():
     _robot = None # reference to robot object
@@ -34,7 +35,32 @@ class MazeExploreAlgo():
             return self.move_along_wall_efficient()
 
     def move_along_wall_efficient(self):
-        pass
+        "under dev"
+        #TODO: change this code and test
+        if ((self._robot.get_position(),self._robot.get_orientation()) in self._history_ls):
+            self.action_precedence = [PMessage.M_TURN_RIGHT,PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT]
+            return PMessage.M_TURN_BACK
+        else:
+            self._history_ls.append((self._robot.get_position(),self._robot.get_orientation()))
+
+        candidate_actions = [] # list of (action,utility)
+        for action in self.action_precedence:
+            ori = self.get_ori_to_check(desired_action=action)
+            status = self.check_status(ori)
+            if (status!=self.CANNOT_ACCESS):
+                utility = self._robot.get_action_utility_points(action=action,map_ref=self._map_ref)
+                if (not candidate_actions):
+                    candidate_actions.append((action,utility))
+                else:
+                    if (utility==candidate_actions[0][1]):
+                        candidate_actions.append((action,utility))
+                    elif (utility>candidate_actions[0][1]):
+                        candidate_actions = [(action,utility)]
+
+        if (candidate_actions):#pick the action with highest utility
+            return candidate_actions[random.randint(0,len(candidate_actions)-1)][0]
+        else:# if no action can be done, then try going back
+            return PMessage.M_TURN_BACK
 
     def move_along_wall(self):
         # check whether the robot has gone into a cycle
@@ -48,15 +74,10 @@ class MazeExploreAlgo():
             ori = self.get_ori_to_check(desired_action=action)
             status = self.check_status(ori)
             if (status!=self.CANNOT_ACCESS):
-                # update the action precedence
                 self.action_precedence = self.PRECEDENCE_UPDATE_DICT[action][status]
-                # do this action
                 return action
 
-        # if no action can be done, then try going back
         return PMessage.M_TURN_BACK
-
-
 
     def check_status(self,ori):
         "return CAN_ACCESS,CANNOT_ACCESS or UNSURE"

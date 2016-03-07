@@ -8,6 +8,7 @@ from bluetooth import *
 import time
 from base import Interface
 from common import PMessage
+from common.constants import ARDUINO_LABEL,ANDROID_LABEL
 
 WIFI_HOST = "192.168.1.1"
 WIFI_PORT = 50001
@@ -25,9 +26,11 @@ FROM_SER = dict({"0": PMessage.M_MOVE_FORWARD, "1": PMessage.M_TURN_RIGHT, "2": 
                  "6": PMessage.M_START_FASTRUN, })
 
 class ArduinoInterface(Interface):
+    name = ARDUINO_LABEL
+
     def __init__(self):
+        super(ArduinoInterface,self).__init__()
         self.status = False
-        self.name = "arduino"
 
     def connect(self):
         try:
@@ -51,7 +54,7 @@ class ArduinoInterface(Interface):
             print "SER--Disconnected to Arduino!"
 
 
-    def read(self):
+    def _read(self):
         try:
             msg = self.ser.readline()
             if msg != "":
@@ -70,7 +73,7 @@ class ArduinoInterface(Interface):
             print "SER--read exception: %s" % str(e)
             # self.reconnect()
 
-    def write(self, msg):
+    def _write(self, msg):
         try:
             realmsg = TO_SER.get(msg.get_msg())
             if realmsg:
@@ -82,9 +85,12 @@ class ArduinoInterface(Interface):
 
 
 class AndroidInterface(Interface):
+
+    name = ANDROID_LABEL
+
     def __init__(self):
+        super(AndroidInterface,self).__init__()
         self.status = False
-        self.name = "android"
 
     def connect(self):
         try:
@@ -124,7 +130,7 @@ class AndroidInterface(Interface):
             print "BT--disconnection exception: %s" % str(e)
 
 
-    def read(self):
+    def _read(self):
         try:
             msg = self.client_sock.recv(2048)
             print "BT--Read from Android: %s" % str(msg)
@@ -133,7 +139,7 @@ class AndroidInterface(Interface):
             print "BT--read exception: %s" % str(e)
             # self.reconnect()
 
-    def write(self, msg):
+    def _write(self, msg):
         try:
             if not msg.get_msg() == "exploreend":
                 msg = msg.render_msg()
