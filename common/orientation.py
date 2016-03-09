@@ -87,6 +87,8 @@ class RelativeOrientation(Orientation):
         "return absolute orientation, if front_major is True, front-left and front-right will be considered as front"
         val = self._val
         if (front_major and abs(val)==1): val = 0
+        if (val==-3): val=-2 # back left same ori as left
+        if (val==3): val=2 # back right same ori as right
         abs_val = (val + ref_front_ori.get_value())%8
         return AbsoluteOrientation(abs_val)
 
@@ -118,8 +120,8 @@ SOUTH_WEST = AbsoluteOrientation(6)
 FRONT = RelativeOrientation(0)
 FRONT_LEFT = RelativeOrientation(-1)
 FRONT_RIGHT = RelativeOrientation(1)
-LEFT = RelativeOrientation(-2)
-RIGHT = RelativeOrientation(2)
+LEFT = RelativeOrientation(-3)
+RIGHT = RelativeOrientation(3)
 BACK_LEFT = RelativeOrientation(-3)
 BACK_RIGHT = RelativeOrientation(3)
 BACK = RelativeOrientation(4)

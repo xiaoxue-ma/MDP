@@ -11,7 +11,7 @@ class RobotSettings():
         {'pos':FRONT_LEFT,'range':2},# front left
         {'pos':FRONT_RIGHT,'range':2}, # front right
         {'pos':FRONT,'range':2}, # front middle
-        {'pos':LEFT,'range':4}, # left
+        {'pos':LEFT,'range':2}, # left
         {'pos':RIGHT,'range':2}, # right
     ]
 

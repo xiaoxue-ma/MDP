@@ -51,8 +51,7 @@ class ReadyState(BaseState):
     def process_input(self,input_tuple):
         "only listen for explore, fast run and move commands"
         type,msg = input_tuple
-        if (type not in CMD_SOURCES):
-            return [],[]
+
         # read android command
         if (msg.get_type()==PMessage.T_COMMAND):
             if (msg.get_msg()==PMessage.M_START_EXPLORE):
@@ -95,6 +94,8 @@ class ReadyState(BaseState):
             sec_per_step = float(msg.get_msg())
             self._machine.set_exploration_command_delay(sec_per_step)
             return [],[]
+        elif(msg.get_type()==PMessage.T_MAP_UPDATE):
+            return [],[msg]
         print("input {} is not valid".format(input_tuple))
         return [],[]
 

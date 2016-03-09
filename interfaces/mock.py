@@ -17,7 +17,7 @@ class MockAndroidInterface(SocketServerInterface):
     _name = ANDROID_LABEL
     _server_ip = MOCK_SERVER_ADDR
     _server_port = ANDROID_SERVER_PORT
-    _write_delay = 0.1
+    _write_delay = 0.2
 
 class MockArduinoInterface(SocketServerInterface):
     _name = ARDUINO_LABEL

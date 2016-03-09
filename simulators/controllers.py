@@ -48,7 +48,7 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
     VALID_CELL_VALUE = MapRef.VALID_CELL_VALUES
     VALID_INSTRUCTIONS = [PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT,PMessage.M_TURN_RIGHT,PMessage.M_START_EXPLORE,PMessage.M_START_FASTRUN,PMessage.M_RESET]
 
-    _sending_sensor_data = False
+    _sending_sensor_data = True
     _sending_move_ack = False
 
     def __init__(self,**kwargs):

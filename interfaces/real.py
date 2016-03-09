@@ -70,6 +70,7 @@ class ArduinoInterface(Interface):
                         return (self.name,realmsg)
 
         except Exception, e:
+            self.disconnect()
             print "SER--read exception: %s" % str(e)
             # self.reconnect()
 
@@ -78,9 +79,11 @@ class ArduinoInterface(Interface):
             realmsg = TO_SER.get(msg.get_msg())
             if realmsg:
                 self.ser.write(realmsg)
+                time.sleep(1)
                 print "SER--Write to Arduino: %s" % str(msg)
         except Exception, e:
             print "SER--write exception: %s" % str(e)
+            self.disconnect()
             # self.reconnect()
 
 
