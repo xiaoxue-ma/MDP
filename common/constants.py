@@ -5,7 +5,7 @@ settings to be used in all programs in the package
 
 
 # for server communication
-MOCK_SERVER_ADDR = "localhost"#"172.22.164.11"
+MOCK_SERVER_ADDR = "192.168.1.1"#"172.22.164.11"
 ANDROID_SERVER_PORT = 9080 # server port on Rpi to serve Android
 ARDUINO_SERVER_PORT = 9010
 PC_SERVER_PORT = 9020

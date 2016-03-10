@@ -146,8 +146,6 @@ class AndroidInterface(Interface):
 
     def _write(self, msg):
         try:
-            if msg.get_msg() == "exploreend":
-                msg._msg = "ee"
             msg = msg.render_msg()
             self.client_sock.send(msg)
             time.sleep(self._write_delay)

@@ -2,6 +2,7 @@ from common import *
 from common.popattern import BasePublisher
 from copy import copy
 from common.amap import *
+from common.orientation import *
 
 class RobotSettings():
     BODY_COLOR = "red"
@@ -11,8 +12,8 @@ class RobotSettings():
         {'pos':FRONT_LEFT,'range':2},# front left
         {'pos':FRONT_RIGHT,'range':2}, # front right
         {'pos':FRONT,'range':2}, # front middle
-        {'pos':LEFT,'range':2}, # left
-        {'pos':RIGHT,'range':2}, # right
+        {'pos':BACK_LEFT,'range':2}, # left
+        {'pos':BACK_RIGHT,'range':2}, # right
     ]
 
 class RobotRef(RobotSettings,BasePublisher):

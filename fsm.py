@@ -147,13 +147,16 @@ class ExplorationState(StateMachine,BaseState):
             return [],[]
 
         # update from arduino
-        if (type!=ARDUINO_LABEL):
+        if (type!=ARDUINO_LABEL or msg.get_type()!=PMessage.T_MAP_UPDATE):
             return [],[]
         # update internal map
         sensor_values = map(int,msg.get_msg().split(","))
+        if (len(sensor_values)!=5):
+            return [],[]
         clear_pos_list,obstacle_pos_list = self._machine.update_map(sensor_values)
         map_update_to_send = [clear_pos_list,obstacle_pos_list] if self.MAP_UPDATE_IN_POS_LIST else msg.get_msg()
-
+        print("Current robot position: {}".format(self._machine.get_robot_ref().get_position()))
+        print("Current robot ori: {}".format(self._machine.get_robot_ref().get_orientation().get_value()))
         if (not self.is_going_back()):
             # check whether exploration is finished
             if (self.can_end_exploration()):
@@ -286,7 +289,7 @@ class ExplorationDoneState(BaseState):
     only accept start fast run command from android
     """
     def __str__(self):
-        return "exploreend"
+        return "ee"
 
     def process_input(self,input_tuple):
         type,msg = input_tuple
