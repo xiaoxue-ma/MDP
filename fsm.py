@@ -1,12 +1,14 @@
 """
 module for implementing Finite State Machine
 """
+import os
 from abc import ABCMeta,abstractmethod
 import time
 from thread import start_new_thread
 from common import *
 from common.timer import Timer
 from common.pmessage import PMessage
+from common.amap import MapSetting
 from algorithms.shortest_path import AStarShortestPathAlgo
 from algorithms.maze_explore import MazeExploreAlgo
 
@@ -114,6 +116,9 @@ class ExplorationState(StateMachine,BaseState):
     MAP_UPDATE_IN_POS_LIST = False # map update sent in a list of clear positions and a list of obstacle positions
     SEND_COVERAGE_UPDATE = False
 
+    # for debugging purpose
+    map_trace_num = 1
+
     def __init__(self,machine,**kwargs):
         super(ExplorationState,self).__init__(machine,**kwargs)
         self.set_next_state(ExplorationFirstRoundState(machine=self))
@@ -155,6 +160,11 @@ class ExplorationState(StateMachine,BaseState):
             return [],[]
         clear_pos_list,obstacle_pos_list = self._machine.update_map(sensor_values)
         map_update_to_send = [clear_pos_list,obstacle_pos_list] if self.MAP_UPDATE_IN_POS_LIST else msg.get_msg()
+        # for debugging purpose
+        map_str = get_map_trace(map_ref=self._map_ref,robot_ref=self._robot_ref)
+        map_str = "\n\n-----------------# {}-------------------------\n\n{}".format(self.map_trace_num,map_str)
+        self.map_trace_num +=1
+        append_map_to_file(map_str)
         print("Current robot position: {}".format(self._machine.get_robot_ref().get_position()))
         print("Current robot ori: {}".format(self._machine.get_robot_ref().get_orientation().get_value()))
         if (not self.is_going_back()):
@@ -198,9 +208,12 @@ class ExplorationState(StateMachine,BaseState):
 
     def can_end_exploration(self):
         "can end exploration when map is fully explored or time is up and robot is back at start point, or coverage limit is reached and robot is at start"
+        #TODO: 60 is hardcoded
         return self._map_ref.is_fully_explored() or\
             (self.timer and not self.timer.is_timing() and self._machine.is_robot_at_start()) or\
-            (self._machine.get_exploration_coverage_limit() and self._machine.get_current_exploration_coverage()>=self._machine.get_exploration_coverage_limit() and self._machine.is_robot_at_start())
+            (self._machine.get_exploration_coverage_limit() and self._machine.get_current_exploration_coverage()>=self._machine.get_exploration_coverage_limit() and self._machine.is_robot_at_start()) or\
+            (self._map_ref.get_unknown_percentage()<60 and self._robot_ref.get_position()==self._map_ref.get_start_zone_center_pos())
+
 
     def end_exploration(self):
         self.stop_timer()
@@ -353,3 +366,34 @@ class EndState(BaseState):
             return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_RESET)],[]
         else:
             return [],[]
+
+# for debugging purpose only
+def get_map_trace(map_ref,robot_ref):
+    map_str = ""
+    cell_format = "{}|"
+    for y in range(map_ref.size_y):
+        for x in range(map_ref.size_x):
+            if ((x,y) in robot_ref.get_occupied_postions()):
+                if ((x,y)==robot_ref.get_head_position()):
+                    map_str += cell_format.format("H")
+                else:
+                    map_str += cell_format.format("B")
+            else:
+                if (map_ref.get_cell(x,y)==MapSetting.OBSTACLE):
+                    map_str += cell_format.format("X")
+                elif (map_ref.get_cell(x,y)==MapSetting.CLEAR):
+                    map_str += cell_format.format(" ")
+                else:# unknown
+                    map_str += cell_format.format("?")
+        map_str += "\n"
+    return map_str
+
+def append_map_to_file(map_str):
+    file_name = "map_trace.txt"
+    # create the file if not exists
+    if not os.path.exists(file_name):
+        f = open(file_name,"w")
+        f.close()
+    # append map to it
+    with open(file_name,"a") as f:
+        f.write(map_str)

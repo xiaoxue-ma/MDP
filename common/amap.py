@@ -212,10 +212,12 @@ class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
         if (notify):
             self.notify([(x,y)])
 
-    def set_cell_list(self,pos_list,value,notify=True):
-        "pos_list should be a list of (x,y)"
+    def set_cell_list(self,pos_list,value,notify=True,maintain_obstacle=True):
+        "pos_list should be a list of (x,y), if maintain_obstacle is true, then the cells that are already set to be obstacle will NOT be updated"
         for x,y in pos_list:
             if (not self.is_out_of_arena(x,y)):
+                if (maintain_obstacle and self.get_cell(x,y)==MapSetting.OBSTACLE):
+                    continue
                 self.set_cell(x,y,value,notify=False)
         if (notify):
             self.notify(pos_list)
