@@ -49,7 +49,7 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
     VALID_INSTRUCTIONS = [PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT,PMessage.M_TURN_RIGHT,PMessage.M_START_EXPLORE,PMessage.M_START_FASTRUN,PMessage.M_RESET]
 
     _sending_sensor_data = True
-    _sending_move_ack = False
+    _sending_move_ack = True
 
     def __init__(self,**kwargs):
         self._map_ref = kwargs.get("map_ref")
@@ -85,10 +85,11 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
                     if (instruction):
 
                         self.execute_instruction(instruction)
+                        if (self._sending_move_ack and instruction in [PMessage.M_TURN_BACK,PMessage.M_TURN_RIGHT,PMessage.M_TURN_LEFT,PMessage.M_MOVE_FORWARD]):
+                            self.send_data(type=PMessage.T_ROBOT_MOVE,data=instruction)
                         if (self._sending_sensor_data):
                             self.send_sensor_data()
-                        if (self._sending_move_ack):
-                            self.send_data(type=PMessage.T_ROBOT_MOVE,data=instruction)
+
                     else: self.show_status("Instruction cannot be decoded!")
 
     def decode_instruction(self,msg):
@@ -162,6 +163,7 @@ class AndroidController(BasePublisher,BaseSimulatorController):
                         pos_list = self._robot.get_occupied_postions()
                         self._map_ref.notify(pos_list)
                         self._robot.execute_command(msg_obj.get_msg())
+
                     elif(msg_obj.get_type()==PMessage.T_EXPLORE_REMAINING_TIME):
                         self._explore_remaining_time = msg_obj.get_msg()
                         self.notify()

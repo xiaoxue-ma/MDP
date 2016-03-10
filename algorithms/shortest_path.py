@@ -40,7 +40,7 @@ class AStarShortestPathAlgo():
                 new_g = self.compute_g_value(cur_node=cur_node,target_node=n)
                 new_f = new_g + n.get_h()
                 if (n.visited):
-                    if (new_f<n.get_f()):
+                    if (new_f<=n.get_f()):
                         n.set_g(new_g)
                         n.parent = cur_node
                         n.ori = AbsoluteOrientation.get_ori_at_dest(start_pos=(cur_node.x,cur_node.y),dest_pos=(n.x,n.y))

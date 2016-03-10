@@ -118,6 +118,7 @@ class ExplorationState(StateMachine,BaseState):
 
     # for debugging purpose
     map_trace_num = 1
+    to_be_acked = []
 
     def __init__(self,machine,**kwargs):
         super(ExplorationState,self).__init__(machine,**kwargs)
@@ -152,6 +153,11 @@ class ExplorationState(StateMachine,BaseState):
             return [],[]
 
         # update from arduino
+        if (type==ARDUINO_LABEL and msg.get_type()==PMessage.T_ROBOT_MOVE):
+            if (self.to_be_acked and msg.get_msg()==self.to_be_acked[0]):
+                self.to_be_acked = self.to_be_acked[1:]
+                return [],[msg]
+
         if (type!=ARDUINO_LABEL or msg.get_type()!=PMessage.T_MAP_UPDATE):
             return [],[]
         # update internal map
@@ -159,12 +165,13 @@ class ExplorationState(StateMachine,BaseState):
         if (len(sensor_values)!=5):
             return [],[]
         clear_pos_list,obstacle_pos_list = self._machine.update_map(sensor_values)
-        map_update_to_send = [clear_pos_list,obstacle_pos_list] if self.MAP_UPDATE_IN_POS_LIST else msg.get_msg()
+        map_update_to_send = [clear_pos_list,obstacle_pos_list] if self.MAP_UPDATE_IN_POS_LIST else msg.get_msg().strip()
         # for debugging purpose
         map_str = get_map_trace(map_ref=self._map_ref,robot_ref=self._robot_ref)
         map_str = "\n\n-----------------# {}-------------------------\n\n{}".format(self.map_trace_num,map_str)
         self.map_trace_num +=1
         append_map_to_file(map_str)
+        print("============================================================")
         print("Current robot position: {}".format(self._machine.get_robot_ref().get_position()))
         print("Current robot ori: {}".format(self._machine.get_robot_ref().get_orientation().get_value()))
         if (not self.is_going_back()):
@@ -214,6 +221,8 @@ class ExplorationState(StateMachine,BaseState):
             (self._machine.get_exploration_coverage_limit() and self._machine.get_current_exploration_coverage()>=self._machine.get_exploration_coverage_limit() and self._machine.is_robot_at_start()) or\
             (self._map_ref.get_unknown_percentage()<60 and self._robot_ref.get_position()==self._map_ref.get_start_zone_center_pos())
 
+    def add_robot_move_to_be_ack(self,move):
+        self.to_be_acked.append(move)
 
     def end_exploration(self):
         self.stop_timer()
@@ -243,8 +252,9 @@ class ExplorationFirstRoundState(BaseState):
         self._robot_ref.execute_command(command)
         if(self._robot_ref.get_position()==self._map_ref.get_start_zone_center_pos() and self._map_ref.get_unknown_percentage()<50):
             self._machine.set_next_state(ExplorationSecondRoundState(machine=self._machine))
+        self._machine.add_robot_move_to_be_ack(command)
         return [PMessage(type=PMessage.T_COMMAND,msg=command)],\
-               [PMessage(type=PMessage.T_ROBOT_MOVE,msg=command)]
+               []#[PMessage(type=PMessage.T_ROBOT_MOVE,msg=command)]
 
 class ExplorationSecondRoundState(BaseState):
     """
@@ -277,7 +287,8 @@ class ExplorationGoBackState(BaseState):
                 self._cmd_buffer = self.get_go_back_cmd_list()
             move = self.dequeue_buffer()
             self._robot_ref.execute_command(move)
-            return [PMessage(type=PMessage.T_COMMAND,msg=move)],[PMessage(type=PMessage.T_ROBOT_MOVE,msg=move)]
+            self._machine.add_robot_move_to_be_ack(move)
+            return [PMessage(type=PMessage.T_COMMAND,msg=move)],[]#[PMessage(type=PMessage.T_ROBOT_MOVE,msg=move)]
 
     def is_going_back_finished(self):
         return self.started_go_back==True and not self._cmd_buffer
@@ -364,6 +375,9 @@ class EndState(BaseState):
             self._machine.reset()
             self._machine.set_next_state(ReadyState(machine=self._machine))
             return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_RESET)],[]
+        elif (type in CMD_SOURCES and msg.get_type()==PMessage.T_COMMAND):
+            self._robot_ref.execute_command(msg.get_msg())
+            return [PMessage(type=PMessage.T_COMMAND,msg=msg.get_msg())],[PMessage(type=PMessage.T_ROBOT_MOVE,msg=msg.get_msg())]
         else:
             return [],[]
 
@@ -394,6 +408,7 @@ def append_map_to_file(map_str):
     if not os.path.exists(file_name):
         f = open(file_name,"w")
         f.close()
+
     # append map to it
     with open(file_name,"a") as f:
         f.write(map_str)

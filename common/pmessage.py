@@ -30,6 +30,7 @@ class PMessage():
     M_START_FASTRUN = "run"
     M_REACH_END = "end"
     M_RESET = "reset"
+    M_CALIBRATE = "calibrate"
     #TODO: remove this in production
     M_JUMP_EXPLORE = "jumpexplore"
 
