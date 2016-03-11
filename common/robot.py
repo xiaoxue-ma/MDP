@@ -104,6 +104,9 @@ class RobotRef(RobotSettings,BasePublisher):
             sensor_pos,sensor_ori = self.get_cur_sensor_state(rel_pos=sensor_setting['pos'])
             reading = sensor_values[i]
             pos_change = sensor_ori.to_pos_change()
+            # if reading goes over range, treat it as no obstacle detected
+            if (reading>sensor_range): reading=self.NOTHING_DETECTED
+            # get list of clear positions and obstacle positions
             if (reading==self.NOTHING_DETECTED):
                 x_min,x_max = min(sensor_pos[0],sensor_pos[0]+pos_change[0]*sensor_range),max(sensor_pos[0],sensor_pos[0]+pos_change[0]*sensor_range)
                 y_min,y_max = min(sensor_pos[1],sensor_pos[1]+pos_change[1]*sensor_range),max(sensor_pos[1],sensor_pos[1]+pos_change[1]*sensor_range)

@@ -181,6 +181,7 @@ class ExplorationState(StateMachine,BaseState):
                 if (self._robot_ref.get_position()!=self._map_ref.get_start_zone_center_pos()):
                     self.set_next_state(ExplorationGoBackState(machine=self))
                 else:
+                    self._map_ref.save_map_to_file("temp.bin")
                     self._machine.set_next_state(ExplorationDoneState(machine=self._machine))
                     return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_END_EXPLORE)],\
                            [PMessage(type=PMessage.T_MAP_UPDATE,msg=map_update_to_send),coverage_msg]
@@ -216,6 +217,7 @@ class ExplorationState(StateMachine,BaseState):
     def can_end_exploration(self):
         "can end exploration when map is fully explored or time is up and robot is back at start point, or coverage limit is reached and robot is at start"
         #TODO: 60 is hardcoded
+        self._map_ref.save_map_to_file("temp.bin")
         return self._map_ref.is_fully_explored() or\
             (self.timer and not self.timer.is_timing() and self._machine.is_robot_at_start()) or\
             (self._machine.get_exploration_coverage_limit() and self._machine.get_current_exploration_coverage()>=self._machine.get_exploration_coverage_limit() and self._machine.is_robot_at_start()) or\
@@ -376,8 +378,8 @@ class EndState(BaseState):
             self._machine.set_next_state(ReadyState(machine=self._machine))
             return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_RESET)],[]
         elif (type in CMD_SOURCES and msg.get_type()==PMessage.T_COMMAND):
-            self._robot_ref.execute_command(msg.get_msg())
-            return [PMessage(type=PMessage.T_COMMAND,msg=msg.get_msg())],[PMessage(type=PMessage.T_ROBOT_MOVE,msg=msg.get_msg())]
+            # self._robot_ref.execute_command(msg.get_msg())
+            return [PMessage(type=PMessage.T_COMMAND,msg=msg.get_msg())],[]
         else:
             return [],[]
 

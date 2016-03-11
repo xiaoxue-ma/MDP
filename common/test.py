@@ -47,6 +47,14 @@ def convert_text_to_binary(filename):
     bin_io.set_top_down(False)
     bin_io.save_map(bin_file_name,td_array=arr)
 
+def convert_binary_to_text(filename):
+    bin_io = BitMapIOMixin()
+    bin_io.set_top_down(False)
+    arr = bin_io.load_map(filename)
+    text_file_name = filename.replace(".bin",".")
+    text_io = TextMapIOMixin()
+    text_io.save_map(text_file_name,td_array=arr)
+
 def print_2d(arr):
     for y in range(len(arr)):
         for x in range(len(arr[0])):
@@ -81,4 +89,4 @@ def test_multithread():
         pass
 
 
-test_multithread()
+convert_binary_to_text("test.bin")
