@@ -5,6 +5,7 @@ from abc import ABCMeta,abstractmethod
 from bitarray import bitarray
 
 from common import *
+from common.debug import debug,DEBUG_COMMON
 from common.popattern import *
 
 class MapSetting():
@@ -104,7 +105,7 @@ class BitMapIOMixin(BaseMapIOMixin):
             content = f.read()
         arr = bitarray()
         arr.frombytes(content)
-        print("Map loaded: {}".format(self.to_hex(arr.tobytes())))
+        debug("Map loaded: {}".format(self.to_hex(arr.tobytes())),DEBUG_COMMON)
         explored = arr[2:302] # explored or unknown
         cleared = arr[304:] # cleared or obstacle
         # load into a 2d array
@@ -148,7 +149,7 @@ class BitMapIOMixin(BaseMapIOMixin):
         # concatenate the two lists
         result_ls = self._pad_zero_right(explored_ls+cleared_ls)
         arr = bitarray([result_ls[i]==1 for i in range(len(result_ls))])
-        print("Map saved: {}".format(self.to_hex(arr.tobytes())))
+        debug("Map saved: {}".format(self.to_hex(arr.tobytes())),DEBUG_COMMON)
         # write the binary string to file
         with open(filename,'wb') as f:
             f.write(arr.tobytes())
@@ -169,7 +170,9 @@ class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
     """
 
     # map data
-    _map_ref = [] # 2D matrix
+    _map_ref = None # 2D matrix
+    _fixed_list = None # list of positions that cannot be reassigned value
+
     size_x = 0
     size_y = 0
     _start_zone_centre_pos = ()
@@ -183,6 +186,7 @@ class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
     def reset(self,x=None,y=None,default=None):
         self._start_zone_centre_pos=self.DEFAULT_START_POS
         self._end_zone_centre_pos = self.DEFAULT_END_POS
+        self._fixed_list = []
         if (x and y and default):
             self._map_ref = [[default for _ in range(x)] for __ in range(y)]
         else:
@@ -208,19 +212,31 @@ class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
         return self._map_ref[y][x]
 
     def set_cell(self,x,y,value,notify=True):
+        if ((x,y) in self._fixed_list):
+            return
         self._map_ref[y][x] = value
         if (notify):
             self.notify([(x,y)])
 
-    def set_cell_list(self,pos_list,value,notify=True,maintain_obstacle=True):
+    def set_cell_list(self,pos_list,value,notify=True,maintain_obstacle=True,maintain_clear=False):
         "pos_list should be a list of (x,y), if maintain_obstacle is true, then the cells that are already set to be obstacle will NOT be updated"
         for x,y in pos_list:
+            if ((x,y) in self._fixed_list):
+                continue
             if (not self.is_out_of_arena(x,y)):
                 if (maintain_obstacle and self.get_cell(x,y)==MapSetting.OBSTACLE):
+                    continue
+                if (maintain_clear and self.get_cell(x,y)==MapSetting.CLEAR):
                     continue
                 self.set_cell(x,y,value,notify=False)
         if (notify):
             self.notify(pos_list)
+
+    def set_fixed_cells(self,pos_list,value):
+        "set cells' value and mark them as fixed"
+        self.set_cell_list(pos_list,value,maintain_obstacle=False,maintain_clear=False)
+        self._fixed_list = list(set(self._fixed_list + pos_list))
+
 
     def get_surrounding_pos(self,x,y):
         "return a list of positions that surround (x,y)"

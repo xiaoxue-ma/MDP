@@ -3,9 +3,10 @@ from thread import start_new_thread
 
 from common.pmessage import PMessage
 from common.amap import MapRef,MapSetting
-from common.network import SocketClient
+from interfaces.base import SocketClientInterface
 from common.popattern import BasePublisher
-from common.constants import *
+from interfaces.config import *
+
 
 class BaseSimulatorController():
     _robot = None # RobotRef object
@@ -18,16 +19,16 @@ class BaseSimulatorController():
 
     def run(self):
         # init client connection
-        self._client = SocketClient(server_addr=self.get_server_addr(),server_port=self.get_server_port())
+        self._client = SocketClientInterface(ip=self.get_server_addr(),port=self.get_server_port())
         start_new_thread(self.start_session,())
 
     def start_session(self):
-        self._client.start()
+        self._client.connect()
         self.serve_connection(self._client)
 
     def send_data(self,type,data):
         msg = PMessage(type=type,msg=data)
-        self._client.write(str(msg))
+        self._client.write(msg)
 
     ########## methods to be implemented by subclass #############
     def serve_connection(self,con):
@@ -69,28 +70,25 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
     def serve_connection(self,conn):
         "get instructions from Rpi and execute"
         while True:
-            msg =conn.read()
-            if (msg):
-                objs = PMessage.load_messages_from_json(msg)
-                if (not objs): continue
-                for msg_obj in objs:
-                    self.show_status("received data: " + str(msg_obj))
-                    if (msg_obj.get_type()==PMessage.T_SET_ROBOT_POS):
-                        x,y=msg_obj.get_msg().split(",")
-                        self._map_ref.refresh()
-                        self._robot.set_position((int(x),int(y)))
-                        self.show_status("Robot position set to {},{}".format(x,y))
-                        continue
-                    instruction = self.decode_instruction(msg_obj)
-                    if (instruction):
+            msg_obj =conn.read()
+            if (msg_obj):
+                self.show_status("received data: " + str(msg_obj))
+                if (msg_obj.get_type()==PMessage.T_SET_ROBOT_POS):
+                    x,y=msg_obj.get_msg().split(",")
+                    self._map_ref.refresh()
+                    self._robot.set_position((int(x),int(y)))
+                    self.show_status("Robot position set to {},{}".format(x,y))
+                    continue
+                instruction = self.decode_instruction(msg_obj)
+                if (instruction):
 
-                        self.execute_instruction(instruction)
-                        if (self._sending_move_ack and instruction in [PMessage.M_TURN_BACK,PMessage.M_TURN_RIGHT,PMessage.M_TURN_LEFT,PMessage.M_MOVE_FORWARD]):
-                            self.send_data(type=PMessage.T_ROBOT_MOVE,data=instruction)
-                        if (self._sending_sensor_data):
-                            self.send_sensor_data()
+                    self.execute_instruction(instruction)
+                    if (self._sending_move_ack and instruction in [PMessage.M_TURN_BACK,PMessage.M_TURN_RIGHT,PMessage.M_TURN_LEFT,PMessage.M_MOVE_FORWARD]):
+                        self.send_data(type=PMessage.T_ROBOT_MOVE,data=instruction)
+                    if (self._sending_sensor_data):
+                        self.send_sensor_data()
 
-                    else: self.show_status("Instruction cannot be decoded!")
+                else: self.show_status("Instruction cannot be decoded!")
 
     def decode_instruction(self,msg):
         return msg.get_msg()
@@ -114,8 +112,8 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
         time.sleep(self.EXECUTION_DELAY)
 
     def reset(self):
-        self._sending_sensor_data = False
-        self._sending_move_ack = False
+        self._sending_sensor_data = True
+        self._sending_move_ack = True
         self._map_ref.load_map_from_file(self.MAP_FILE_NAME)
         self._robot.reset()
 
@@ -148,48 +146,23 @@ class AndroidController(BasePublisher,BaseSimulatorController):
 
     def serve_connection(self,con):
         while True:
-            data =con.read()
-            if (data):
-                objs = PMessage.load_messages_from_json(data)
-                if (not objs): continue
-                for msg_obj in objs:
-                    print("received data: " + str(msg_obj))
-                    if (msg_obj.get_type()==PMessage.T_MAP_UPDATE):
-                        self.process_data(msg_obj.get_msg())
-                        self._robot.refresh()
-                    elif (msg_obj.get_type()==PMessage.T_STATE_CHANGE):
-                        self.show_status("status changed to :{}".format(msg_obj.get_msg()))
-                    elif (msg_obj.get_type()==PMessage.T_ROBOT_MOVE and msg_obj.get_msg()):
-                        pos_list = self._robot.get_occupied_postions()
-                        self._map_ref.notify(pos_list)
-                        self._robot.execute_command(msg_obj.get_msg())
-
-                    elif(msg_obj.get_type()==PMessage.T_EXPLORE_REMAINING_TIME):
-                        self._explore_remaining_time = msg_obj.get_msg()
-                        self.notify()
-                    elif(msg_obj.get_type()==PMessage.T_CUR_EXPLORE_COVERAGE):
-                        self._cur_explore_coverage = msg_obj.get_msg()
-                        self.notify()
+            msg_obj =con.read()
+            if (msg_obj):
+                if (msg_obj.get_type()==PMessage.T_MAP_UPDATE):
+                    self.process_data(msg_obj.get_msg())
+                    self._robot.refresh()
+                elif (msg_obj.get_type()==PMessage.T_STATE_CHANGE):
+                    self.show_status("status changed to :{}".format(msg_obj.get_msg()))
+                elif (msg_obj.get_type()==PMessage.T_ROBOT_MOVE and msg_obj.get_msg()):
+                    pos_list = self._robot.get_occupied_postions()
+                    self._map_ref.notify(pos_list)
+                    self._robot.execute_command(msg_obj.get_msg())
 
     def get_cur_coverage(self):
         return self._cur_explore_coverage
 
     def get_exploration_remaining_time(self):
         return self._explore_remaining_time
-
-    def set_explore_coverage_limit(self,limit):
-        self.send_data(type=PMessage.T_SET_EXPLORE_COVERAGE,data=limit)
-        self.show_status("Coverage limit set to {}".format(limit))
-
-    def set_explore_speed(self,num_steps_per_sec):
-        delay = int(10.0/num_steps_per_sec) / 10.0
-        self.show_status("Speed set to {} steps per second".format(num_steps_per_sec))
-        self.send_data(type=PMessage.T_SET_EXPLORE_SPEED,data=delay)
-
-    def set_explore_time_limit(self,time_limit):
-        self._explore_time_limit = time_limit
-        self.send_data(type=PMessage.T_SET_EXPLORE_TIME_LIMIT,data=time_limit)
-        self.show_status("Exploration time limit set to {} s".format(time_limit))
 
     def set_robot_pos(self,x,y):
         self.send_data(type=PMessage.T_SET_ROBOT_POS,data="{},{}".format(x,y))
@@ -249,7 +222,7 @@ class AndroidController(BasePublisher,BaseSimulatorController):
             self._map_ref.set_cell_list(pos_list=clear_pos_list,value=MapSetting.CLEAR,notify=True)
             self._map_ref.set_cell_list(pos_list=obstacle_pos_list,value=MapSetting.OBSTACLE,notify=True)
         else:
-            sensor_values = [int(i) for i in recv_data.split(SENSOR_READING_DELIMITER)]
+            sensor_values = [int(i) for i in recv_data.split(",")]
             self.update_map(sensor_values)
 
     # deprecated

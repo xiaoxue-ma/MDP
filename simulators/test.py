@@ -101,7 +101,7 @@ class ClientSimulationApp():
 
     def process_data(self,recv_data):
         "update the map according to sensor data and return reply msg"
-        sensor_values = [int(i) for i in recv_data.split(SENSOR_READING_DELIMITER)]
+        sensor_values = [int(i) for i in recv_data.split(",")]
         self.update_map(sensor_values)
         # update robot
         command = self._explore_algo.get_next_move()

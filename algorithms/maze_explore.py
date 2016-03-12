@@ -6,14 +6,14 @@ import random
 class MazeExploreAlgo():
     _robot = None # reference to robot object
     _map_ref = None # reference to map array
-    _history_ls = [] # list of position, orientation tuples
+    _history_ls = None # list of position, orientation tuples
 
     CAN_ACCESS,CANNOT_ACCESS,UNSURE = 1,2,3
     # in the exploration, the robot will attempt the following action in sequence
     DEFAULT_ACTION_PRECEDENCE = [PMessage.M_TURN_RIGHT,PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT]
     PRECEDENCE_UPDATE_DICT = {
-        PMessage.M_TURN_RIGHT:{CAN_ACCESS:[PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT],UNSURE:[PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT]},
-        PMessage.M_MOVE_FORWARD:{CAN_ACCESS:DEFAULT_ACTION_PRECEDENCE,CANNOT_ACCESS:DEFAULT_ACTION_PRECEDENCE,UNSURE:DEFAULT_ACTION_PRECEDENCE}, # front got three sensors, so no unsure
+        PMessage.M_TURN_RIGHT:{CAN_ACCESS:[PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT,PMessage.M_TURN_RIGHT],UNSURE:[PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT,PMessage.M_TURN_RIGHT]},
+        PMessage.M_MOVE_FORWARD:{CAN_ACCESS:DEFAULT_ACTION_PRECEDENCE,UNSURE:DEFAULT_ACTION_PRECEDENCE}, # front got three sensors, so no unsure
         PMessage.M_TURN_LEFT : {CAN_ACCESS:DEFAULT_ACTION_PRECEDENCE,UNSURE:DEFAULT_ACTION_PRECEDENCE}
     }
     action_precedence = DEFAULT_ACTION_PRECEDENCE
@@ -26,6 +26,7 @@ class MazeExploreAlgo():
     def __init__(self,robot,map_ref):
         self._robot = robot
         self._map_ref = map_ref
+        self._history_ls = []
 
     def get_next_move(self):
         "return the command to be executed next"

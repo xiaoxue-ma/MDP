@@ -1,5 +1,6 @@
 from common import *
 from common.utils import MinQueue
+from common.debug import debug,DEBUG_ALGO
 from common.amap import MapRef
 
 class AStarShortestPathAlgo():
@@ -49,7 +50,7 @@ class AStarShortestPathAlgo():
                     n.set_g(new_g)
                     n.ori = AbsoluteOrientation.get_ori_at_dest(start_pos=(cur_node.x,cur_node.y),dest_pos=(n.x,n.y))
                     node_q.enqueue(n)
-        print("number of iterations for finding shortest path: {}".format(num_iterations))
+        debug("number of iterations for finding shortest path: {}".format(num_iterations),DEBUG_ALGO)
         # return list of commands
         self.print_route(dest_node=dest_node,start_node=start_node)
         return self.get_command_list(start_node=start_node,end_node=dest_node)
@@ -83,11 +84,11 @@ class AStarShortestPathAlgo():
     def print_route(self,dest_node,start_node):
         # terminating case
         if (dest_node.equals(start_node)):
-            print("{},{}".format(start_node.x,start_node.y))
+            debug("{},{}".format(start_node.x,start_node.y),DEBUG_ALGO)
             return
         # recursive call
         self.print_route(dest_node=dest_node.parent,start_node=start_node)
-        print("{},{}".format(dest_node.x,dest_node.y))
+        debug("{},{}".format(dest_node.x,dest_node.y),DEBUG_ALGO)
 
     def compute_g_value(self,cur_node,target_node):
         "return the cost value from cur_pos to target_pos"

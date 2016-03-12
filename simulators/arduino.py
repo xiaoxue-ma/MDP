@@ -4,7 +4,6 @@ import time
 
 from common.robot import *
 from common.amap import *
-from common.network import *
 
 from simulators.controllers import ArduinoController
 

@@ -1,5 +1,7 @@
 import json
 
+class ValidationException(Exception):
+    pass
 
 class PMessage():
     _type = None
@@ -11,30 +13,20 @@ class PMessage():
     T_ROBOT_MOVE = "rm"
     T_MAP_UPDATE = "mu"
     T_SET_ROBOT_POS = "setrobotpos" # msg should be like 1,2
-    T_SET_ROBOT_ORI = "setrobotori" # msg should be 'NORTH' or 'SOUTH' or 'EAST' or 'WEST'
-    T_SET_EXPLORE_TIME_LIMIT = "setexploretime" # msg for this should be a int
-    T_SET_EXPLORE_COVERAGE = "setexplorecoverage" # msg for this should be a int
-    T_EXPLORE_REMAINING_TIME = "exploreremainingtime" # msg for this should be a int
-    T_CUR_EXPLORE_COVERAGE = "curexplorecoverage" # msg is int
-    T_SET_EXPLORE_SPEED = "setexplorespeed" # in secs per step
     #TODO: for simulation only
     T_LOAD_MAP = "loadmap" # msg should be map path
 
     # for msg
-    M_START_EXPLORE = "explore"
-    M_END_EXPLORE = "endexplore"
-    M_MOVE_FORWARD = "mf"
-    M_TURN_LEFT = "tl"
-    M_TURN_RIGHT = "tr"
-    M_TURN_BACK = "tb"
-    M_START_FASTRUN = "run"
-    M_REACH_END = "end"
-    M_RESET = "reset"
-    M_CALIBRATE = "calibrate"
-    #TODO: remove this in production
-    M_JUMP_EXPLORE = "jumpexplore"
-
-    M_MOVE_INSTRUCTIONS = [M_MOVE_FORWARD,M_TURN_LEFT,M_TURN_RIGHT]
+    M_MOVE_INSTRUCTIONS = M_MOVE_FORWARD,M_TURN_LEFT,M_TURN_RIGHT,M_TURN_BACK = ["mf",
+                                                                                 "tl",
+                                                                                 "tr",
+                                                                                 "tb"]
+    M_OTHER_INSTRUCTIONS = M_START_EXPLORE,M_END_EXPLORE,M_START_FASTRUN,M_RESET,M_CALIBRATE = ["explore",
+                                                                                                "endexplore",
+                                                                                                "run",
+                                                                                                "reset",
+                                                                                                "calibrate"]
+    M_VALID_COMMAND_MSGS = M_MOVE_INSTRUCTIONS + M_OTHER_INSTRUCTIONS
 
     def render_msg(self):
         "return message formatted in JSON"
@@ -54,9 +46,11 @@ class PMessage():
         json_str = kwargs.get("json_str")
         if (json_str):
             obj = json.loads(json_str)
+            PMessage.validate(obj['type'],obj['msg'])
             self._type = obj['type']
             self._msg = obj['msg']
         else:
+            PMessage.validate(kwargs.get("type"),kwargs.get("msg"))
             self._type = kwargs.get("type")
             self._msg = kwargs.get("msg")
 
@@ -77,6 +71,33 @@ class PMessage():
     def get_msg(self):
         return self._msg
 
-# common messages
-START_EXPLORE = PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_START_EXPLORE)
-STATE_CHANGED_TO_EXPLORE = PMessage(type=PMessage.T_STATE_CHANGE,msg=PMessage.M_START_EXPLORE)
+    def is_map_update(self):
+        return self.get_type()==self.T_MAP_UPDATE
+
+    @staticmethod
+    def validate(type,msg):
+        if (type==PMessage.T_COMMAND):
+            if (msg not in PMessage.M_VALID_COMMAND_MSGS):
+                raise ValidationException("{} is not a valid command".format(msg))
+        elif(type==PMessage.T_ROBOT_MOVE):
+            if (msg not in PMessage.M_MOVE_INSTRUCTIONS):
+                raise ValidationException("{} is not a valid robot move".format(msg))
+        elif(type==PMessage.T_STATE_CHANGE):
+            return
+        elif(type==PMessage.T_MAP_UPDATE):
+            try:
+                values = map(int,msg.strip().split(","))
+                a = values[4]
+            except:
+                raise ValidationException("{} is not a valid map update".format(msg))
+        elif(type==PMessage.T_SET_ROBOT_POS):
+            try:
+                values = map(int,msg.strip().split(","))
+            except:
+                raise ValidationException("{} is not a valid robot position".format(msg))
+            if (len(values)!=2):
+                raise ValidationException("{} is not a valid robot position".format(msg))
+        elif(type==PMessage.T_LOAD_MAP):
+            return
+        else:
+            raise ValidationException("{} is not a valid message type".format(type))

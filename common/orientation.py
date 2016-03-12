@@ -1,4 +1,3 @@
-from common.constants import *
 from common.pmessage import PMessage
 
 class Orientation():

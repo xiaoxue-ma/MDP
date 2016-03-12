@@ -2,6 +2,7 @@ from common import *
 from common.popattern import BasePublisher
 from copy import copy
 from common.amap import *
+from common.debug import debug,DEBUG_COMMON
 from common.orientation import *
 
 class RobotSettings():
@@ -60,7 +61,7 @@ class RobotRef(RobotSettings,BasePublisher):
         elif (command==PMessage.M_TURN_LEFT): self.turn_left()
         elif(command==PMessage.M_MOVE_FORWARD): self.move_forward()
         elif(command==PMessage.M_TURN_BACK): self.turn_back()
-        else:print("Command {} is not a valid command for robot".format(command))
+        else:debug("Command {} is not a valid command for robot".format(command),DEBUG_COMMON)
 
     def get_sensor_readings(self,map_ref):
         "return a list of numbers"
