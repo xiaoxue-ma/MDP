@@ -88,5 +88,7 @@ def test_multithread():
     while True:
         pass
 
-
-convert_binary_to_text("test.bin")
+if __name__ == '__main__':
+    for i in range(10,21):
+        filename = "map-" + str(i) + ".txt"
+        convert_text_to_binary(filename)
