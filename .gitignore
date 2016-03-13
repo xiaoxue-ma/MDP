@@ -1,6 +1,7 @@
 .idea
 *.iml
 *.pyc
+*.png
 algorithms/test.py
 venv
 
