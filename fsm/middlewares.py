@@ -1,6 +1,6 @@
 import os
 from abc import abstractmethod,ABCMeta
-
+from common.popattern import BasePublisher
 from common.utils import SimpleQueue,get_or_exception,create_or_append_file
 from interfaces.config import VALID_LABELS,CMD_SOURCES,ARDUINO_LABEL
 from common.pmessage import PMessage
@@ -123,7 +123,7 @@ class MapUpdateMiddleware(BaseMiddleware):
     map_trace_file_name = "map-trace.txt"
 
     def process_input(self,label,msg):
-        if (label!=ARDUINO_LABEL and msg.get_type()!=PMessage.T_MAP_UPDATE):
+        if (label!=ARDUINO_LABEL or msg.get_type()!=PMessage.T_MAP_UPDATE):
             return [],[]
         sensor_values = map(int,msg.get_msg().split(","))
         clear_pos_list,obstacle_pos_list = self.update_map(sensor_values)
@@ -167,6 +167,21 @@ class MapUpdateMiddleware(BaseMiddleware):
                         map_str += cell_format.format("?")
             map_str += "\n"
         return map_str
+
+# class MapUpdateMiddlewareAsPublisher(MapUpdateMiddleware,BasePublisher):
+#     """
+#     wrapper class to provide observer-pattern functions
+#     """
+#     def __init__(self,*args,**kwargs):
+#         super(MapUpdateMiddlewareAsPublisher,self).__init__(*args,**kwargs)
+#         listeners = kwargs.get("listeners",[])
+#         for l in listeners:
+#             self.add_change_listener(l)
+#
+#     def update_map(self,sensor_values):
+#         val = super(MapUpdateMiddlewareAsPublisher,self).update_map(sensor_values)
+#         self.notify()
+#         return val
 
 class ResetMiddleware(BaseMiddleware):
     """

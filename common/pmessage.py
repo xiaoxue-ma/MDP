@@ -21,11 +21,12 @@ class PMessage():
                                                                                  "tl",
                                                                                  "tr",
                                                                                  "tb"]
-    M_OTHER_INSTRUCTIONS = M_START_EXPLORE,M_END_EXPLORE,M_START_FASTRUN,M_RESET,M_CALIBRATE = ["explore",
+    M_OTHER_INSTRUCTIONS = M_START_EXPLORE,M_END_EXPLORE,M_START_FASTRUN,M_RESET,M_CALIBRATE,M_GET_SENSOR = ["explore",
                                                                                                 "endexplore",
                                                                                                 "run",
                                                                                                 "reset",
-                                                                                                "calibrate"]
+                                                                                                "calibrate",
+                                                                                                "sense"]
     M_VALID_COMMAND_MSGS = M_MOVE_INSTRUCTIONS + M_OTHER_INSTRUCTIONS
 
     def render_msg(self):

@@ -11,6 +11,7 @@ from middlewares import *
 from machine import *
 from common.pmessage import PMessage
 from common.amap import MapSetting
+from common.debug import debug, DEBUG_STATES
 from algorithms.shortest_path import AStarShortestPathAlgo
 from algorithms.maze_explore import MazeExploreAlgo
 
@@ -73,7 +74,8 @@ class BaseState(object):
         try:
             cmds,datas = self.post_process(label,msg)
             return cmd_ls+cmds,data_ls+datas
-        except:
+        except Exception as e:
+            debug("Post process error: {}".format(e),DEBUG_STATES)
             return cmd_ls,data_ls
 
     def get_map_ref(self):
@@ -122,13 +124,14 @@ class ExplorationState(StateMachine,BaseState):
     Will make change to RobotRef and MapRef
     """
 
-    def __init__(self,machine,**kwargs):
-        super(ExplorationState,self).__init__(machine,**kwargs)
+    def __init__(self,*args,**kwargs):
+        super(ExplorationState,self).__init__(*args,**kwargs)
         self._map_ref = self._machine.get_map_ref()
         self._robot_ref = self._machine.get_robot_ref()
-        self.set_next_state(ExplorationFirstRoundState(machine=self))
         self.clear_middlewares()
-        self.add_middleware(MapUpdateMiddleware(state=self))
+        self._mapupdate_mid = MapUpdateMiddleware(state=self)
+        self.add_middleware(self._mapupdate_mid)
+        self.set_next_state(ExplorationFirstRoundStateWithTimer(machine=self))
 
     def __str__(self):
         return "explore"
@@ -147,6 +150,9 @@ class ExplorationState(StateMachine,BaseState):
         self._map_ref.save_map_to_file("temp.bin")
         self._machine.set_next_state(ExplorationDoneState(machine=self._machine))
 
+    def send_command(self,msg):
+        self._machine.send_command(msg)
+
 class ExplorationFirstRoundState(BaseState):
     """
     Substate of ExplorationState
@@ -156,8 +162,8 @@ class ExplorationFirstRoundState(BaseState):
     _explore_algo = None
     _end_coverage_threshold = 60 #TODO: this is hardcoded
 
-    def __init__(self,machine,**kwargs):
-        super(ExplorationFirstRoundState,self).__init__(machine=machine,**kwargs)
+    def __init__(self,*args,**kwargs):
+        super(ExplorationFirstRoundState,self).__init__(*args,**kwargs)
         self._explore_algo = MazeExploreAlgo(robot=self._machine.get_robot_ref(),map_ref=self._machine.get_map_ref())
 
     def post_process(self,label,msg):
@@ -169,6 +175,8 @@ class ExplorationFirstRoundState(BaseState):
             self.add_robot_move_to_be_ack(command)
             return [PMessage(type=PMessage.T_COMMAND,msg=command)],\
                    []
+        else:
+            return [],[]
 
     def add_robot_move_to_be_ack(self,move):
         self.add_expected_ack(label=ARDUINO_LABEL,msg=PMessage(type=PMessage.T_ROBOT_MOVE,msg=move),call_back=self.ack_move_to_android,args=[move])
@@ -177,6 +185,24 @@ class ExplorationFirstRoundState(BaseState):
         self._robot_ref.execute_command(move)
         self._map_ref.set_fixed_cells(self._robot_ref.get_occupied_postions(),MapSetting.CLEAR)
         return [],[PMessage(type=PMessage.T_ROBOT_MOVE,msg=move)]
+
+class ExplorationFirstRoundStateWithTimer(ExplorationFirstRoundState):
+    _timer = None # timer for sending extra command in case map update not sent back in time
+    _MAP_UPDATE_TIME_LIMIT = 6
+
+    def __init__(self,*args,**kwargs):
+        super(ExplorationFirstRoundStateWithTimer,self).__init__(*args,**kwargs)
+        self._timer = Timer(limit=self._MAP_UPDATE_TIME_LIMIT,end_callback=self.ask_for_map_update)
+        #self._machine.add_mapupdate_listener(self._timer)
+
+    def post_process(self,label,msg):
+        cmd_ls,data_ls = super(ExplorationFirstRoundStateWithTimer,self).post_process(label,msg)
+        if (cmd_ls):
+            # get new command, stop the previous timer and start a new timer
+            self._timer.shutdown()
+            debug("Get new command, try to start timer",DEBUG_STATES)
+            self._timer.start()
+        return cmd_ls,data_ls
 
 #TODO: this class is currently unused
 class ExplorationSecondRoundState(BaseState):

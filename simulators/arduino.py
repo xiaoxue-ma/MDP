@@ -70,6 +70,11 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
         self._load_map_btn.grid(row=0,column=1)
         self._load_map_text = Text(master=fr,height=1,width=10)
         self._load_map_text.grid(row=0,column=2)
+        self._switch_sensor_btn = Button(master=fr,text="switch sensor",command=self.toggle_sensor)
+        self._switch_sensor_btn.grid(row=0,column=3)
+
+    def toggle_sensor(self):
+        self._controller.toggle_sensor()
 
     def load_map(self):
         filename = self._load_map_text.get("1.0",END)[:-1]

@@ -1,4 +1,5 @@
 import time
+import random
 from thread import start_new_thread
 
 from common.pmessage import PMessage
@@ -52,6 +53,8 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
     _sending_sensor_data = True
     _sending_move_ack = True
 
+    _make_sensor_noise = False # cause sensor reading to have error
+
     def __init__(self,**kwargs):
         self._map_ref = kwargs.get("map_ref")
         self._robot = kwargs.get("robot_ref")
@@ -63,9 +66,31 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
     def send_sensor_data(self):
         "send sensor reading to client"
         readings = self._robot.get_sensor_readings(self._map_ref)
+        if (self._make_sensor_noise):
+            readings = self.add_random_error(readings)
         self.send_data(type=PMessage.T_MAP_UPDATE,
                        data=",".join([str(i) for i in readings]))
         self.show_status("Readings sent")
+
+    def toggle_sensor(self):
+        self._sending_sensor_data = not self._sending_sensor_data
+        if (self._sending_sensor_data):
+            self.send_sensor_data()
+        self.show_status("sensor is now {}".format("on" if self._sending_sensor_data else "off"))
+
+    def add_random_error(self,readings):
+        if (random.randint(0,4)==0):
+            # make noise
+            return [self.random_mutate(val) for val in readings]
+        else:
+            return readings
+
+    def random_mutate(self,val):
+        # hardcoded
+        if (random.randint(0,4)==0):
+            return random.randint(-1,1)
+        else:
+            return val
 
     def serve_connection(self,conn):
         "get instructions from Rpi and execute"
@@ -79,9 +104,11 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
                     self._robot.set_position((int(x),int(y)))
                     self.show_status("Robot position set to {},{}".format(x,y))
                     continue
+                elif (msg_obj.get_type()==PMessage.T_COMMAND and msg_obj.get_msg()==PMessage.M_GET_SENSOR):
+                    self.send_sensor_data()
+                    continue
                 instruction = self.decode_instruction(msg_obj)
                 if (instruction):
-
                     self.execute_instruction(instruction)
                     if (self._sending_move_ack and instruction in [PMessage.M_TURN_BACK,PMessage.M_TURN_RIGHT,PMessage.M_TURN_LEFT,PMessage.M_MOVE_FORWARD]):
                         self.send_data(type=PMessage.T_ROBOT_MOVE,data=instruction)
@@ -157,6 +184,7 @@ class AndroidController(BasePublisher,BaseSimulatorController):
                     pos_list = self._robot.get_occupied_postions()
                     self._map_ref.notify(pos_list)
                     self._robot.execute_command(msg_obj.get_msg())
+                    self._map_ref.set_fixed_cells(self._robot.get_occupied_postions(),MapSetting.CLEAR)
 
     def get_cur_coverage(self):
         return self._cur_explore_coverage
@@ -229,8 +257,8 @@ class AndroidController(BasePublisher,BaseSimulatorController):
     def update_map(self,sensor_values):
         "update the map_ref and also the gui"
         clear_pos_list,obstacle_pos_list = self._robot.sense_area(sensor_values)
-        self._map_ref.set_cell_list(pos_list=clear_pos_list,value=MapRef.CLEAR)
-        self._map_ref.set_cell_list(pos_list=obstacle_pos_list,value=MapRef.OBSTACLE)
+        self._map_ref.set_cell_list(pos_list=clear_pos_list,value=MapSetting.CLEAR,maintain_obstacle=True)
+        self._map_ref.set_cell_list(pos_list=obstacle_pos_list,value=MapSetting.OBSTACLE,maintain_clear=False)
 
     def show_status(self,msg):
         self.notify(data=msg)

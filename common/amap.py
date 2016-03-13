@@ -295,6 +295,10 @@ class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
         x,y=self.get_start_zone_center_pos()
         return [(x+i,y+j) for i in range(-1,2) for j in range(-1,2)]
 
+    def notify(self,data=None):
+        debug("Map updated",DEBUG_COMMON)
+        super(MapRef,self).notify(data=data)
+
 class MapUI(BaseObserver):
     """
     Observer of MapRef
@@ -327,25 +331,27 @@ class MapUI(BaseObserver):
         return self._cells
 
     def paint(self,map_ref=None):
-        "paint color for the map cells"
+        "paint color for all map cells"
         size_x,size_y=self._map_ref.get_size_x(),self._map_ref.get_size_y()
-        for i in range(size_y):
-            for j in range(size_x):
-                if ((j,i) in self._start_zone_indexes):
-                    cell_color = self.CELL_COLORS[MapSetting.START_ZONE]
-                elif ((j,i) in self._end_zone_indexes):
-                    cell_color = self.CELL_COLORS[MapSetting.END_ZONE]
-                else:
-                    cell_color = self.CELL_COLORS[self._map_ref.get_cell(j,i)]
-                self._cells[i][j].config(bg=cell_color)
-                self._cells[i][j].config(highlightbackground=cell_color)
+        self.paint_list([(x,y) for x in range(size_x) for y in range(size_y)])
 
     def paint_list(self,pos_list):
+        "paint color for a list of map cells"
         for pos in pos_list:
             x,y=pos[0],pos[1]
             if (not self._map_ref.is_out_of_arena(x,y)):
-                self._cells[y][x].config(bg=self.CELL_COLORS[self._map_ref.get_cell(x,y)])
-                self._cells[y][x].config(highlightbackground=self.CELL_COLORS[self._map_ref.get_cell(x,y)])
+                cell_color = self.get_cell_color(x,y)
+                self._cells[y][x].config(bg=cell_color)
+                self._cells[y][x].config(highlightbackground=cell_color)
+
+    def get_cell_color(self,x,y):
+        if ((x,y) in self._start_zone_indexes):
+            return self.CELL_COLORS[MapSetting.START_ZONE]
+        elif ((x,y) in self._end_zone_indexes):
+            return self.CELL_COLORS[MapSetting.END_ZONE]
+        else:
+            return self.CELL_COLORS[self._map_ref.get_cell(x,y)]
+
 
     # observer method
     def update(self,data=None):

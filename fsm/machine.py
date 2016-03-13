@@ -1,3 +1,5 @@
+from common.debug import debug,DEBUG_STATES
+
 class StateMachine(object):
     """
     Interface specification for State Machine
@@ -8,6 +10,7 @@ class StateMachine(object):
 
     def set_next_state(self,st):
         self._state = st
+        debug("state changed to {}".format(st),DEBUG_STATES)
 
     def get_map_ref(self):
         return self._map_ref
@@ -18,3 +21,5 @@ class StateMachine(object):
     def reset(self):
         raise NotImplementedError()
 
+    def send_command(self,msg):
+        raise NotImplementedError()

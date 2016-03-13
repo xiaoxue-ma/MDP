@@ -54,6 +54,13 @@ class CentralController(StateMachine):
     def update(self):
         pass
 
+    def send_command(self,msg):
+        try:
+            pmsg = PMessage(type=PMessage.T_COMMAND,msg=msg)
+            self._enqueue_list(self._cmd_out_q,[pmsg])
+        except Exception,e:
+            pass
+
     # allow delay is deprecated
     def _enqueue_list(self,q,list,allow_delay=False):
         "enqueue list items on another thread"
