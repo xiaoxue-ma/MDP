@@ -114,12 +114,9 @@ class RelativeOrientation(Orientation):
         RelativeOrientation._instances.append(new_instance)
         return new_instance
 
-    def get_actual_abs_ori(self,ref_front_ori,front_major=True):
+    def get_actual_abs_ori(self,ref_front_ori):
         "return absolute orientation, if front_major is True, front-left and front-right will be considered as front"
         val = self._val
-        if (front_major and abs(val)==1): val = 0
-        if (val==-3): val=-2 # back left same ori as left
-        if (val==3): val=2 # back right same ori as right
         abs_val = (val + ref_front_ori.get_value())%8
         return AbsoluteOrientation.get_instance(abs_val)
 

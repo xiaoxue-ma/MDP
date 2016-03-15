@@ -182,7 +182,7 @@ class ExplorationFirstRoundState(BaseState):
     def ack_move_to_android(self,move):
         self._robot_ref.execute_command(move)
         # detect whether the robot is at a corner, send callibrate command if so
-        self._robot_ref
+        #TODO: write here
         self._map_ref.set_fixed_cells(self._robot_ref.get_occupied_postions(),MapSetting.CLEAR)
         if(self._robot_ref.get_position()==self._map_ref.get_start_zone_center_pos() and 100-self._map_ref.get_unknown_percentage()>self._end_coverage_threshold):
             self.trigger_end_exploration()

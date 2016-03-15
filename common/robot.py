@@ -10,11 +10,12 @@ class RobotSettings():
     HEAD_COLOR = "white"
     NOTHING_DETECTED = -1
     SENSORS = [
-        {'pos':FRONT_LEFT,'range':2},# front left
-        {'pos':FRONT_RIGHT,'range':2}, # front right
-        {'pos':FRONT,'range':2}, # front middle
-        {'pos':BACK_LEFT,'range':2}, # left
-        {'pos':BACK_RIGHT,'range':2}, # right
+        {'ori':FRONT,'pos':FRONT_LEFT,'range':2},# front left
+        {'ori':FRONT,'pos':FRONT_RIGHT,'range':2}, # front right
+        {'ori':FRONT,'pos':FRONT,'range':2}, # front middle
+        {'pos':BACK_LEFT,'range':2,'ori':LEFT}, # left
+        {'pos':FRONT_RIGHT,'range':2,'ori':RIGHT},
+        {'pos':BACK_RIGHT,'range':2,'ori':RIGHT}, # right
     ]
 
 class RobotRef(RobotSettings,BasePublisher):
@@ -73,13 +74,13 @@ class RobotRef(RobotSettings,BasePublisher):
         "return a list of numbers"
         readings = []
         for sensor in self.SENSORS:
-            sensor_pos,sensor_ori = self.get_cur_sensor_state(rel_pos=sensor['pos'])
+            sensor_pos,sensor_ori = self.get_cur_sensor_state(rel_pos=sensor['pos'],rel_ori=sensor['ori'])
             readings.append(self._sense(map=map_ref,x=sensor_pos[0],y=sensor_pos[1],ori=sensor_ori,range=sensor['range']))
         return readings
 
-    def get_cur_sensor_state(self,rel_pos):
+    def get_cur_sensor_state(self,rel_pos,rel_ori):
         "return the actual sensor location and orientation"
-        abs_ori = rel_pos.get_actual_abs_ori(ref_front_ori=self._ori)
+        abs_ori = rel_ori.get_actual_abs_ori(ref_front_ori=self._ori)
         position_delta = rel_pos.to_pos_change(rel_front_ori=self._ori)
         actual_position = (self._pos[0] + position_delta[0], self._pos[1] + position_delta[1])
         return actual_position,abs_ori
@@ -108,7 +109,7 @@ class RobotRef(RobotSettings,BasePublisher):
             # get necessary info for update
             sensor_setting = self.SENSORS[i]
             sensor_range = sensor_setting['range']
-            sensor_pos,sensor_ori = self.get_cur_sensor_state(rel_pos=sensor_setting['pos'])
+            sensor_pos,sensor_ori = self.get_cur_sensor_state(rel_pos=sensor_setting['pos'],rel_ori=sensor_setting['ori'])
             reading = sensor_values[i]
             pos_change = sensor_ori.to_pos_change()
             # if reading goes over range, treat it as no obstacle detected

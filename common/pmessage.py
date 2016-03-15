@@ -7,6 +7,8 @@ class PMessage():
     _type = None
     _msg = None
 
+    SENSOR_VALUE_NUM = 6 # keep this consistent with robot setting
+
     # for type
     T_COMMAND = "cmd"
     T_STATE_CHANGE = "stc"
@@ -93,7 +95,7 @@ class PMessage():
         elif(type==PMessage.T_MAP_UPDATE):
             try:
                 values = map(int,msg.strip().split(","))
-                a = values[4]
+                a = values[PMessage.SENSOR_VALUE_NUM-1]
             except:
                 raise ValidationException("{} is not a valid map update".format(msg))
         elif(type==PMessage.T_SET_ROBOT_POS):

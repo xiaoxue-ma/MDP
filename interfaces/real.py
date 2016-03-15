@@ -47,24 +47,25 @@ class ArduinoInterface(Interface):
 
 
     def read(self):
-        try:
-            msg = self.ser.readline()
-            if msg != "":
-                debug("SER--Read from Arduino: %s" % str(msg),DEBUG_INTERFACE)
-                if len(msg) > 1:
-                    if msg[0] != 'T':
-                        realmsg = PMessage(type=PMessage.T_MAP_UPDATE, msg=msg)
-                        return realmsg
-                else:
-                    msg = msg[0]
-                    if msg < '4':
-                        realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=FROM_SER.get(msg[0]))
-                        return realmsg
-        except ValidationException as e:
-            debug("validation exception: {}".format(e.message),DEBUG_VALIDATION)
-        except Exception, e:
-            debug("SER--read exception: %s" % str(e),DEBUG_INTERFACE)
-            self.reconnect()
+        if self.ser.inWaiting():
+            try:
+                msg = self.ser.readline()
+                if msg != "":
+                    print "SER--Read from Arduino: %s" % str(msg)
+                    if len(msg) > 5:
+                        if msg[1] != ' ':
+                            realmsg = PMessage(type=PMessage.T_MAP_UPDATE, msg=msg)
+                            return (self.name,realmsg)
+                    else:
+                        msg = msg[0]
+                        if msg < '4':
+                            realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=FROM_SER.get(msg[0]))
+                            return (self.name,realmsg)
+            except ValidationException as e:
+                debug("validation exception: {}".format(e.message),DEBUG_VALIDATION)
+            except Exception, e:
+                debug("SER--read exception: %s" % str(e),DEBUG_INTERFACE)
+                self.reconnect()
 
     def write(self, msg):
         try:
