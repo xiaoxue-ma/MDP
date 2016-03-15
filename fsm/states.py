@@ -131,7 +131,7 @@ class ExplorationState(StateMachine,BaseState):
         self.clear_middlewares()
         self._mapupdate_mid = MapUpdateMiddleware(state=self)
         self.add_middleware(self._mapupdate_mid)
-        self.set_next_state(ExplorationFirstRoundStateWithTimer(machine=self))
+        self.set_next_state(ExplorationStateWithTimerAndCallibration(machine=self))
 
     def __str__(self):
         return "explore"
@@ -181,8 +181,6 @@ class ExplorationFirstRoundState(BaseState):
 
     def ack_move_to_android(self,move):
         self._robot_ref.execute_command(move)
-        # detect whether the robot is at a corner, send callibrate command if so
-        #TODO: write here
         self._map_ref.set_fixed_cells(self._robot_ref.get_occupied_postions(),MapSetting.CLEAR)
         if(self._robot_ref.get_position()==self._map_ref.get_start_zone_center_pos() and 100-self._map_ref.get_unknown_percentage()>self._end_coverage_threshold):
             self.trigger_end_exploration()
@@ -215,6 +213,30 @@ class ExplorationFirstRoundStateWithTimer(ExplorationFirstRoundState):
     def trigger_end_exploration(self):
         self._timer.shutdown()
         super(ExplorationFirstRoundStateWithTimer,self).trigger_end_exploration()
+
+class ExplorationStateWithTimerAndCallibration(ExplorationFirstRoundStateWithTimer):
+    """
+    wrapper class that sends additional Callibration message upon ack of robot move
+    """
+
+
+    def ack_move_to_android(self,move):
+        cmd_ls,data_ls = super(ExplorationStateWithTimerAndCallibration,self).ack_move_to_android(move)
+        # detect whether the robot is at a corner, send callibrate command if so
+        blocked_sides = self._robot_ref.get_sides_fully_blocked(self._map_ref)
+        callibration_msgs_to_send = self.get_callibration_msgs(blocked_sides)
+        self._map_ref.set_fixed_cells(self._robot_ref.get_occupied_postions(),MapSetting.CLEAR)
+        return callibration_msgs_to_send+cmd_ls,data_ls
+
+    def get_callibration_msgs(self,sides):
+        "return a list of PMessage"
+        ORI_TO_MSG = {
+            FRONT:PMessage.M_CALLIBRATE_FRONT,
+            LEFT:PMessage.M_CALLIBRATE_LEFT,
+            RIGHT: PMessage.M_CALLIBRATE_RIGHT
+        }
+        return [PMessage(type=PMessage.T_CALLIBRATE,msg=ORI_TO_MSG[s]) for s in sides]
+
 
 #TODO: this class is currently unused
 class ExplorationSecondRoundState(BaseState):

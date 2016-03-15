@@ -127,6 +127,9 @@ class RelativeOrientation(Orientation):
     def __unicode__(self):
         return self.ORI_VERBOSE[self._val]
 
+    def __str__(self):
+        return self.ORI_VERBOSE[self._val]
+
 
 #TODO: move this to another module
 def sum_coordinate(c1,c2):

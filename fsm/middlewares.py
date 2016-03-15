@@ -70,8 +70,8 @@ class AckMiddleware(BaseMiddleware):
                 try:
                     cmd_list,data_list = call_back(*call_back_args) if call_back_args else call_back()
                     return cmd_list,data_list
-                except:
-                    debug("ack call back function doesn't return two lists",DEBUG_MIDDLEWARE)
+                except Exception as e:
+                    debug("ack call back function doesn't return two lists: {}".format(e),DEBUG_MIDDLEWARE)
                     return [],[]
 
         return [],[]

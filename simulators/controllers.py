@@ -107,6 +107,9 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
                 elif (msg_obj.get_type()==PMessage.T_COMMAND and msg_obj.get_msg()==PMessage.M_GET_SENSOR):
                     self.send_sensor_data()
                     continue
+                elif(msg_obj.get_type()==PMessage.T_CALLIBRATE):
+                    self.do_callibration(msg_obj.get_msg())
+                    continue
                 instruction = self.decode_instruction(msg_obj)
                 if (instruction):
                     self.execute_instruction(instruction)
@@ -116,6 +119,14 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
                         self.send_sensor_data()
 
                 else: self.show_status("Instruction cannot be decoded!")
+
+    def do_callibration(self,msg):
+        if (msg==PMessage.M_CALLIBRATE_LEFT):
+            print("Callibrating to the left")
+        elif (msg==PMessage.M_CALLIBRATE_RIGHT):
+            print("Callibrating to the right")
+        elif (msg==PMessage.M_CALLIBRATE_RIGHT):
+            print("Callibrating to the right")
 
     def decode_instruction(self,msg):
         return msg.get_msg()

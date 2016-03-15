@@ -64,11 +64,20 @@ class RobotRef(RobotSettings,BasePublisher):
         elif(command==PMessage.M_TURN_BACK): self.turn_back()
         else:debug("Command {} is not a valid command for robot".format(command),DEBUG_COMMON)
 
-    def get_sides_facing_wall(self,map_ref):
+    def get_sides_fully_blocked(self,map_ref):
+        "return a list of RelativeOri"
         x,y = self._pos[0],self._pos[1]
-        if (x==1 and y==1):
-            pass
-
+        sides_to_check = [FRONT,LEFT,RIGHT]
+        fully_blocked_sides = []
+        for i in range(len(sides_to_check)):
+            # check whether the side is fully blocked
+            reL_ori = sides_to_check[i]
+            delta_x,delta_y = reL_ori.to_pos_change(self._ori)
+            side_pos_delta = [(delta_x*2,k) for k in range(-1,2)] if delta_y == 0\
+                            else [(k,delta_y*2) for k in range(-1,2)]
+            if (map_ref.are_all_unaccessible([sum_coordinate((x,y),coord) for coord in side_pos_delta])):
+                fully_blocked_sides.append(sides_to_check[i])
+        return fully_blocked_sides
 
     def get_sensor_readings(self,map_ref):
         "return a list of numbers"

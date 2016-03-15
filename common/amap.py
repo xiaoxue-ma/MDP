@@ -193,8 +193,8 @@ class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
             self._map_ref = [[self.DEFAULT_CELL_VALUE for _ in range(self.DEFAULT_MAP_SIZE_X)] for __ in range(self.DEFAULT_MAP_SIZE_Y)]
         # set start zone to be clear
         self._update_size()
-        indexes = self.get_start_zone_indexes()
-        self.set_cell_list(indexes,value=MapSetting.CLEAR,notify=False)
+        indexes = self.get_start_zone_indexes() + self.get_end_zone_indexes()
+        self.set_fixed_cells(indexes,value=MapSetting.CLEAR)
         self.notify()
 
     def is_fully_explored(self):
@@ -236,6 +236,13 @@ class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
         "set cells' value and mark them as fixed"
         self.set_cell_list(pos_list,value,maintain_obstacle=False,maintain_clear=False)
         self._fixed_list = list(set(self._fixed_list + pos_list))
+
+    def are_all_unaccessible(self,pos_list):
+        "return true if all positions in the list are not accessbile"
+        for x,y in pos_list:
+            if ((not self.is_out_of_arena(x,y)) and self.get_cell(x,y)!=MapSetting.OBSTACLE):
+                return False
+        return True
 
 
     def get_surrounding_pos(self,x,y):

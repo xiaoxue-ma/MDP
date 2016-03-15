@@ -105,7 +105,7 @@ class PMessage():
                 raise ValidationException("{} is not a valid robot position".format(msg))
             if (len(values)!=2):
                 raise ValidationException("{} is not a valid robot position".format(msg))
-        elif(type==PMessage.T_LOAD_MAP):
+        elif(type==PMessage.T_LOAD_MAP or type==PMessage.T_CALLIBRATE):
             return
         else:
             raise ValidationException("{} is not a valid message type".format(type))
