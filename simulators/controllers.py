@@ -45,7 +45,7 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
     """
     controlling the internal logic of arduino simulator
     """
-    EXECUTION_DELAY = 0.2
+    EXECUTION_DELAY = 0
     MAP_FILE_NAME = "map-1.bin"
     VALID_CELL_VALUE = MapRef.VALID_CELL_VALUES
     VALID_INSTRUCTIONS = [PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT,PMessage.M_TURN_RIGHT,PMessage.M_START_EXPLORE,PMessage.M_START_FASTRUN,PMessage.M_RESET]
@@ -145,7 +145,7 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
         self._robot.reset()
 
     def show_status(self,msg):
-        self.notify(data=msg)
+        # self.notify(data=msg)
         print(msg)
 
     def load_map(self,filename):
@@ -182,9 +182,10 @@ class AndroidController(BasePublisher,BaseSimulatorController):
                     self.show_status("status changed to :{}".format(msg_obj.get_msg()))
                 elif (msg_obj.get_type()==PMessage.T_ROBOT_MOVE and msg_obj.get_msg()):
                     pos_list = self._robot.get_occupied_postions()
+                    self._map_ref.set_fixed_cells(self._robot.get_occupied_postions(),MapSetting.CLEAR)
                     self._map_ref.notify(pos_list)
                     self._robot.execute_command(msg_obj.get_msg())
-                    self._map_ref.set_fixed_cells(self._robot.get_occupied_postions(),MapSetting.CLEAR)
+
 
     def get_cur_coverage(self):
         return self._cur_explore_coverage

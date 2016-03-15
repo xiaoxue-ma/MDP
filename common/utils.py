@@ -10,10 +10,10 @@ class BaseQueue(object):
     """
     __metaclass__ = ABCMeta
 
-    _list = []
+    _list = None
 
     def __init__(self,*args,**kwargs):
-        pass
+        self._list = []
 
     @abstractmethod
     def dequeue(self):

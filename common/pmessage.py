@@ -13,6 +13,7 @@ class PMessage():
     T_ROBOT_MOVE = "rm"
     T_MAP_UPDATE = "mu"
     T_SET_ROBOT_POS = "setrobotpos" # msg should be like 1,2
+    T_CALLIBRATE = "callibrate"
     #TODO: for simulation only
     T_LOAD_MAP = "loadmap" # msg should be map path
 
@@ -28,6 +29,10 @@ class PMessage():
                                                                                                 "calibrate",
                                                                                                 "sense"]
     M_VALID_COMMAND_MSGS = M_MOVE_INSTRUCTIONS + M_OTHER_INSTRUCTIONS
+
+    M_CALLIBRATE_FRONT = "cfront"
+    M_CALLIBRATE_LEFT = "cleft"
+    M_CALLIBRATE_RIGHT = "cright"
 
     def render_msg(self):
         "return message formatted in JSON"

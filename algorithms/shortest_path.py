@@ -115,7 +115,7 @@ class AStarShortestPathAlgo():
                        for y in range(n)]
 
     def _get_heuristic_value(self,x,y):
-        return abs(x-self._target_pos[0]) + abs(y-self._target_pos[1]) if self._map_ref.get_cell(x,y)==MapRef.CLEAR else self.NON_ACCESS_H_VALUE
+        return abs(x-self._target_pos[0]) + abs(y-self._target_pos[1])-1 if self._map_ref.get_cell(x,y)==MapRef.CLEAR else self.NON_ACCESS_H_VALUE
 
 class Node():
 

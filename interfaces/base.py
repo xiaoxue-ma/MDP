@@ -3,7 +3,7 @@ import time
 import socket
 from threading import Lock
 from common.pmessage import PMessage,ValidationException
-from common.utils import synchronized
+from common.utils import synchronized,SimpleQueue
 from common.debug import debug,DEBUG_INTERFACE,DEBUG_VALIDATION
 
 class Interface(object):
@@ -15,6 +15,7 @@ class Interface(object):
     _write_lock = None # prevent simultaneous write
     _ready = False
     _name = "interface"
+    _msg_buffer = None # a queue
 
     def __unicode__(self):
         return self._name
@@ -22,6 +23,7 @@ class Interface(object):
     def __init__(self):
         self._read_lock = Lock()
         self._write_lock = Lock()
+        self._msg_buffer = SimpleQueue()
 
     @abstractmethod
     def connect(self):
@@ -39,7 +41,7 @@ class Interface(object):
 
     @abstractmethod
     def read(self):
-        "return pmessage object"
+        "return list of pmessage objects"
         pass
 
     @abstractmethod
@@ -68,10 +70,12 @@ class BaseSocketInterface(Interface):
     _write_delay = 0.2 # delay for writing in seconds
     _recv_size= 2048
 
+
     def __init__(self,ip=None,port=None):
         super(BaseSocketInterface,self).__init__()
         if (ip): self._server_ip = ip
         if (port): self._server_port = port
+
 
     def set_write_delay(self,delay):
         self._write_delay = delay
@@ -93,7 +97,10 @@ class BaseSocketInterface(Interface):
             print "{} disconnection exception: {}".format(self._name, e)
 
     def read(self):
-        """return a label,Message tuple, None if invalid message is received"""
+        """return a Message object, None if invalid message is received"""
+        if (not self._msg_buffer.is_empty()):
+            return self._msg_buffer.dequeue()
+
         if (not self._connection):
             raise Exception("connection not ready, cannot read")
         data = None
@@ -108,8 +115,11 @@ class BaseSocketInterface(Interface):
         if (data):
             debug("Received data from {} : {}".format(self._name, data),DEBUG_INTERFACE)
             try:
-                pmsg = PMessage(json_str=data)
-                return pmsg
+                pmsgs = PMessage.load_messages_from_json(json_str=data)
+                if (pmsgs):
+                    for msg in pmsgs:
+                        self._msg_buffer.enqueue(msg)
+                    return self._msg_buffer.dequeue()
             except ValidationException as e:
                 debug("Validation exception: {}".format(e.message),DEBUG_VALIDATION)
                 return None

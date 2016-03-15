@@ -170,8 +170,6 @@ class ExplorationFirstRoundState(BaseState):
         # get next move
         if (label==ARDUINO_LABEL and msg.is_map_update()):
             command = self._explore_algo.get_next_move()
-            if(self._robot_ref.get_position()==self._map_ref.get_start_zone_center_pos() and 100-self._map_ref.get_unknown_percentage()>self._end_coverage_threshold):
-                self._machine.end_exploration()
             self.add_robot_move_to_be_ack(command)
             return [PMessage(type=PMessage.T_COMMAND,msg=command)],\
                    []
@@ -183,8 +181,15 @@ class ExplorationFirstRoundState(BaseState):
 
     def ack_move_to_android(self,move):
         self._robot_ref.execute_command(move)
+        # detect whether the robot is at a corner, send callibrate command if so
+        self._robot_ref
         self._map_ref.set_fixed_cells(self._robot_ref.get_occupied_postions(),MapSetting.CLEAR)
+        if(self._robot_ref.get_position()==self._map_ref.get_start_zone_center_pos() and 100-self._map_ref.get_unknown_percentage()>self._end_coverage_threshold):
+            self.trigger_end_exploration()
         return [],[PMessage(type=PMessage.T_ROBOT_MOVE,msg=move)]
+
+    def trigger_end_exploration(self):
+        self._machine.end_exploration()
 
 class ExplorationFirstRoundStateWithTimer(ExplorationFirstRoundState):
     _timer = None # timer for sending extra command in case map update not sent back in time
@@ -203,6 +208,13 @@ class ExplorationFirstRoundStateWithTimer(ExplorationFirstRoundState):
             debug("Get new command, try to start timer",DEBUG_STATES)
             self._timer.start()
         return cmd_ls,data_ls
+
+    def ask_for_map_update(self):
+        self._machine.send_command(PMessage.M_GET_SENSOR)
+
+    def trigger_end_exploration(self):
+        self._timer.shutdown()
+        super(ExplorationFirstRoundStateWithTimer,self).trigger_end_exploration()
 
 #TODO: this class is currently unused
 class ExplorationSecondRoundState(BaseState):

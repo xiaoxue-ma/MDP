@@ -1,6 +1,7 @@
 from common import *
 from common.amap import MapRef
 from common.pmessage import PMessage
+from common.debug import debug,DEBUG_ALGO
 import random
 
 class MazeExploreAlgo():
@@ -39,9 +40,11 @@ class MazeExploreAlgo():
         "under dev"
         #TODO: change this code and test
         if ((self._robot.get_position(),self._robot.get_orientation()) in self._history_ls):
+            debug("Loop detected, go back",DEBUG_ALGO)
             self.action_precedence = [PMessage.M_TURN_RIGHT,PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT]
             return PMessage.M_TURN_BACK
         else:
+            debug("History: pos({}), orientation({})".format(self._robot.get_position(),self._robot.get_orientation()),DEBUG_ALGO)
             self._history_ls.append((self._robot.get_position(),self._robot.get_orientation()))
 
         candidate_actions = [] # list of (action,utility)
@@ -67,8 +70,11 @@ class MazeExploreAlgo():
         # check whether the robot has gone into a cycle
         if ((self._robot.get_position(),self._robot.get_orientation()) in self._history_ls):
             self.action_precedence = [PMessage.M_TURN_RIGHT,PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT]
+            debug("Loop detected, go back",DEBUG_ALGO)
+            self._history_ls = []
             return PMessage.M_TURN_BACK
         else:
+            debug("History: pos({}), orientation({})".format(self._robot.get_position(),self._robot.get_orientation()),DEBUG_ALGO)
             self._history_ls.append((self._robot.get_position(),self._robot.get_orientation()))
 
         for action in self.action_precedence:

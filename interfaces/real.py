@@ -118,10 +118,16 @@ class AndroidInterface(Interface):
 
 
     def read(self):
+        if (not self._msg_buffer.is_empty()):
+            return self._msg_buffer.dequeue()
         try:
             msg = self.client_sock.recv(2048)
             debug("BT--Read from Android: %s" % str(msg),DEBUG_INTERFACE)
-            return PMessage(json_str=msg)
+            pmsgs = PMessage.load_messages_from_json(json_str=msg)
+            if (pmsgs):
+                for msg in pmsgs:
+                    self._msg_buffer.enqueue(msg)
+                return self._msg_buffer.dequeue()
         except ValidationException as e:
             debug("Validation exception: {}".format(e.message),DEBUG_VALIDATION)
         except Exception, e:
