@@ -19,7 +19,7 @@ class BasePublisher():
         "add a listener object, which has update() method"
         self._listeners.append(listener)
 
-class BaseObserver():
+class BaseObserver(object):
 
     __metaclass__ = ABCMeta
 

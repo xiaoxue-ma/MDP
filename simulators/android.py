@@ -78,7 +78,8 @@ class ClientSimulationApp(BaseObserver):
         self._reset_btn.grid(row=0,column=5)
         self._endexplore_btn = Button(master=fr,text="end explore",command=self._controller.end_explore)
         self._endexplore_btn.grid(row=0,column=6)
-
+        self._trace_btn = Button(master=fr,text="trace",command=self.toggle_tracing)
+        self._trace_btn.grid(row=0,column=7)
 
     def _init_io_frame(self,fr):
         self._load_map_btn = Button(master=fr,text="load map",command=self.load_map)
@@ -96,7 +97,13 @@ class ClientSimulationApp(BaseObserver):
 
     def _init_map_frame(self,fr,map_ref,robot_ref):
         self._map_ui = MapUI(frame=fr,map_ref=map_ref)
-        self._robotUI = RobotUI(robot=robot_ref,cells=self._map_ui.get_cells())
+        self._robotUI = RobotUIWithTracing(robot=robot_ref,cells=self._map_ui.get_cells())
+
+    def toggle_tracing(self):
+        if (self._robotUI.is_tracing()):
+            self._robotUI.stop_tracing()
+        else:
+            self._robotUI.start_tracing()
 
     def set_robot_pos(self):
         msg = self._set_robot_pos_text.get("1.0",END)[:-1]

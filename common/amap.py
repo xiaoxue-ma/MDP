@@ -279,6 +279,17 @@ class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
                 self.set_cell(x=i,y=j,value=type)
                 self.notify([(i,j)])
 
+    def get_num_obstacles(self):
+        return sum([1 if self.get_cell(x,y)==MapSetting.OBSTACLE else 0
+                    for x in range(self.size_x) for y in range(self.size_y)])
+
+    def set_unknowns_as_clear(self):
+        "set all unknown cells as clear"
+        for x in range(self.size_x):
+            for y in range(self.size_y):
+                if (self.get_cell(x,y)==MapSetting.UNKNOWN):
+                    self.set_cell(x,y,MapSetting.CLEAR)
+
     def get_size_x(self):
         return self.size_x
 

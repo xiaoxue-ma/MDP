@@ -11,12 +11,18 @@ from common.debug import debug,DEBUG_INTERFACE,DEBUG_VALIDATION
 from interfaces.config import *
 
 
+# TO_SER = dict({PMessage.M_MOVE_FORWARD: "0", PMessage.M_TURN_RIGHT: "1", PMessage.M_TURN_LEFT: "2",
+#                PMessage.M_TURN_BACK: "3", PMessage.M_START_EXPLORE: "4", PMessage.M_END_EXPLORE: "5",
+#                PMessage.M_START_FASTRUN: "6", })
 TO_SER = dict({PMessage.M_MOVE_FORWARD: "0", PMessage.M_TURN_RIGHT: "1", PMessage.M_TURN_LEFT: "2",
-               PMessage.M_TURN_BACK: "3", PMessage.M_START_EXPLORE: "4", PMessage.M_END_EXPLORE: "5",
-               PMessage.M_START_FASTRUN: "6", })
-FROM_SER = dict({"0": PMessage.M_MOVE_FORWARD, "1": PMessage.M_TURN_RIGHT, "2": PMessage.M_TURN_LEFT,
-                 "3": PMessage.M_TURN_BACK, "4": PMessage.M_START_EXPLORE, "5": PMessage.M_END_EXPLORE,
-                 "6": PMessage.M_START_FASTRUN, })
+               PMessage.M_TURN_BACK: "3", PMessage.M_START_EXPLORE: "4", PMessage.M_START_FASTRUN: "5",
+               PMessage.M_CALLIBRATE_FRONT: "6", PMessage.M_CALLIBRATE_RIGHT:"7"})
+#
+# FROM_SER = dict({"0": PMessage.M_MOVE_FORWARD, "1": PMessage.M_TURN_RIGHT, "2": PMessage.M_TURN_LEFT,
+#                  "3": PMessage.M_TURN_BACK, "4": PMessage.M_START_EXPLORE, "5": PMessage.M_END_EXPLORE,
+#                  "6": PMessage.M_START_FASTRUN, })
+
+FROM_SER = {value:key for key,value in TO_SER.items()}
 
 class ArduinoInterface(Interface):
     name = ARDUINO_LABEL

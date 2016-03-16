@@ -8,11 +8,19 @@ import time
 from thread import start_new_thread
 from threading import Lock,Thread
 from common.amap import BitMapIOMixin,TextMapIOMixin,MapRef,MapSetting
-from common.network import SocketServer
-from common.utils import synchronized
+from common.utils import synchronized,MinQueue
 
 x_len = 15
 y_len = 20
+
+def test_q():
+    q = MinQueue(key=lambda x:x)
+    q.enqueue(4)
+    q.enqueue(10)
+    q.enqueue(1)
+    print(q.dequeue())
+    print(q.dequeue())
+    print(q.dequeue())
 
 def test_network():
     server=SocketServer(addr="172.22.164.11",port=9004)
@@ -89,6 +97,4 @@ def test_multithread():
         pass
 
 if __name__ == '__main__':
-    for i in range(10,21):
-        filename = "map-" + str(i) + ".txt"
-        convert_text_to_binary(filename)
+    test_q()

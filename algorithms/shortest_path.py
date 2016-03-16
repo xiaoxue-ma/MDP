@@ -7,8 +7,9 @@ class AStarShortestPathAlgo():
 
     # algo settings
     NON_ACCESS_H_VALUE = 1E6
-    UNIT_TURN_COST = 1 # cost for every turn
-    END_ALGO_UPON_REACHING_DEST = False
+    UNIT_TURN_COST = 20 # cost for every turn
+    UNIT_MOVE_COST = 10
+    END_ALGO_UPON_REACHING_DEST = True
 
     # algo data
     _nodes = [] # 2D list of nodes
@@ -40,14 +41,18 @@ class AStarShortestPathAlgo():
             for n in neighbours:
                 new_g = self.compute_g_value(cur_node=cur_node,target_node=n)
                 new_f = new_g + n.get_h()
+                debug("new g value is {}".format(new_g),DEBUG_ALGO)
                 if (n.visited):
-                    if (new_f<=n.get_f()):
+                    if (new_f<n.get_f()):
                         n.set_g(new_g)
+                        debug("[Update parent] Attach {} to node {}".format(n.get_desc(),cur_node.get_desc()),DEBUG_ALGO)
                         n.parent = cur_node
                         n.ori = AbsoluteOrientation.get_ori_at_dest(start_pos=(cur_node.x,cur_node.y),dest_pos=(n.x,n.y))
+                    debug("[No action] {} is visited and new_f is {}".format(n.get_desc(),new_f),DEBUG_ALGO)
                 else: # not visited
                     n.parent = cur_node
                     n.set_g(new_g)
+                    debug("[Create parent] Attach {} to node {}".format(n.get_desc(),cur_node.get_desc()),DEBUG_ALGO)
                     n.ori = AbsoluteOrientation.get_ori_at_dest(start_pos=(cur_node.x,cur_node.y),dest_pos=(n.x,n.y))
                     node_q.enqueue(n)
         debug("number of iterations for finding shortest path: {}".format(num_iterations),DEBUG_ALGO)
@@ -88,14 +93,14 @@ class AStarShortestPathAlgo():
             return
         # recursive call
         self.print_route(dest_node=dest_node.parent,start_node=start_node)
-        debug("{},{}".format(dest_node.x,dest_node.y),DEBUG_ALGO)
+        debug("node: {},{}  | h value: {}  | g value: {}".format(dest_node.x,dest_node.y,dest_node._h,dest_node._g),DEBUG_ALGO)
 
     def compute_g_value(self,cur_node,target_node):
         "return the cost value from cur_pos to target_pos"
         cur_g = cur_node.get_g()
         target_ori = AbsoluteOrientation.get_ori_at_dest(start_pos=(cur_node.x,cur_node.y),dest_pos=(target_node.x,target_node.y))
         additional_g = cur_node.ori.get_minimum_turns_to(target_ori)*self.UNIT_TURN_COST
-        return additional_g + cur_g + 1 # 1 is move cost
+        return additional_g + cur_g + self.UNIT_MOVE_COST # 1 is move cost
 
     def get_neighbour_nodes(self,node):
         "return a list of nodes"
@@ -115,7 +120,7 @@ class AStarShortestPathAlgo():
                        for y in range(n)]
 
     def _get_heuristic_value(self,x,y):
-        return abs(x-self._target_pos[0]) + abs(y-self._target_pos[1])-1 if self._map_ref.get_cell(x,y)==MapRef.CLEAR else self.NON_ACCESS_H_VALUE
+        return abs(x-self._target_pos[0]) + abs(y-self._target_pos[1]) if self._map_ref.get_cell(x,y)==MapRef.CLEAR else self.NON_ACCESS_H_VALUE
 
 class Node():
 
@@ -134,6 +139,9 @@ class Node():
         self.x = x
         self.y = y
         self.set_h(h)
+
+    def get_desc(self):
+        return "Node (x:{}, y:{}, h:{}, g:{}, f:{})".format(self.x,self.y,self._h,self._g,self._f)
 
     def set_h(self,h):
         self._h = h

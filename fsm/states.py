@@ -124,6 +124,8 @@ class ExplorationState(StateMachine,BaseState):
     Will make change to RobotRef and MapRef
     """
 
+    _MAX_POSSIBLE_OBSTACLES = -1 # -1 means ignore
+
     def __init__(self,*args,**kwargs):
         super(ExplorationState,self).__init__(*args,**kwargs)
         self._map_ref = self._machine.get_map_ref()
@@ -147,6 +149,8 @@ class ExplorationState(StateMachine,BaseState):
         return cmd_list,data_list
 
     def end_exploration(self):
+        if (self._MAX_POSSIBLE_OBSTACLES!=-1 and self._map_ref.get_num_obstacles()>=self._MAX_POSSIBLE_OBSTACLES):
+            self._map_ref.set_unknowns_as_clear()
         self._map_ref.save_map_to_file("temp.bin")
         self._machine.set_next_state(ExplorationDoneState(machine=self._machine))
 
@@ -224,7 +228,11 @@ class ExplorationStateWithTimerAndCallibration(ExplorationFirstRoundStateWithTim
         cmd_ls,data_ls = super(ExplorationStateWithTimerAndCallibration,self).ack_move_to_android(move)
         # detect whether the robot is at a corner, send callibrate command if so
         blocked_sides = self._robot_ref.get_sides_fully_blocked(self._map_ref)
-        callibration_msgs_to_send = self.get_callibration_msgs(blocked_sides)
+        # currently let arduino callibrate right itself
+        if (len(blocked_sides)==1 and blocked_sides[0]==RIGHT):
+            callibration_msgs_to_send=[]
+        else:
+            callibration_msgs_to_send = self.get_callibration_msgs(blocked_sides)
         self._map_ref.set_fixed_cells(self._robot_ref.get_occupied_postions(),MapSetting.CLEAR)
         return callibration_msgs_to_send+cmd_ls,data_ls
 

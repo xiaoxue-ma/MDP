@@ -5,7 +5,7 @@ from common.amap import *
 from common.debug import debug,DEBUG_COMMON
 from common.orientation import *
 
-class RobotSettings():
+class RobotSettings(object):
     BODY_COLOR = "red"
     HEAD_COLOR = "white"
     NOTHING_DETECTED = -1
@@ -197,3 +197,33 @@ class RobotUI(RobotSettings,BaseObserver):
 
     def update(self,data=None):
         self.paint_robot()
+
+class RobotUIWithTracing(RobotUI):
+    _traced_pos = None
+    _is_tracing = False
+
+    TRACE_COLOR = 'pink'
+
+    def __init__(self,*args,**kwargs):
+        super(RobotUIWithTracing,self).__init__(*args,**kwargs)
+        self._traced_pos = []
+
+    def paint_robot(self):
+        super(RobotUIWithTracing,self).paint_robot()
+        if (self._is_tracing):
+            self._traced_pos.append(self._robot.get_position())
+            self.paint_robot_trace()
+
+    def paint_robot_trace(self):
+        for x,y in self._traced_pos:
+            self._cells[y][x].config(bg=self.TRACE_COLOR)
+
+    def start_tracing(self):
+        self._traced_pos = []
+        self._is_tracing = True
+
+    def stop_tracing(self):
+        self._is_tracing = False
+
+    def is_tracing(self):
+        return self._is_tracing

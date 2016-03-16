@@ -35,7 +35,7 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
         self._map_frame.grid(row=0,column=0)
         # add this app as the listener of robot
         _robot = RobotRef()
-        self._robotUI = RobotUI(robot=_robot,cells=self._map_ui.get_cells())
+        self._robotUI = RobotUIWithTracing(robot=_robot,cells=self._map_ui.get_cells())
         #_robot.add_change_listener(self)
         # init controller
         self._controller = ArduinoController(map_ref=_map_ref,robot_ref=_robot)
@@ -72,6 +72,14 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
         self._load_map_text.grid(row=0,column=2)
         self._switch_sensor_btn = Button(master=fr,text="switch sensor",command=self.toggle_sensor)
         self._switch_sensor_btn.grid(row=0,column=3)
+        self._trace_robot_btn = Button(master=fr,text="trace",command=self.start_tracing)
+        self._trace_robot_btn.grid(row=0,column=4)
+
+    def start_tracing(self):
+        if (self._robotUI.is_tracing()):
+            self._robotUI.stop_tracing()
+        else:
+            self._robotUI.start_tracing()
 
     def toggle_sensor(self):
         self._controller.toggle_sensor()

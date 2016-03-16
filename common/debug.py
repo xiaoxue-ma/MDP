@@ -21,12 +21,12 @@ DEBUG_SETTING = {
     "enabled_types":[
     #DEBUG_VALIDATION,
     #DEBUG_IO_QUEUE,
-    DEBUG_INTERFACE,
+    #DEBUG_INTERFACE,
     DEBUG_STATES,
     #DEBUG_MIDDLEWARE,
     DEBUG_OTHERS,
     #DEBUG_TIMER,
-    #DEBUG_ALGO
+    DEBUG_ALGO
     ],
     "save_file":False,
     "file_name":"debug.txt" # without extension

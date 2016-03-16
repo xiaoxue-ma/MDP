@@ -144,7 +144,9 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
             self._robot.turn_back()
         elif(instruct==PMessage.M_START_EXPLORE):self._sending_sensor_data=True
         elif (instruct==PMessage.M_END_EXPLORE): self._sending_sensor_data = False
-        elif(instruct==PMessage.M_START_FASTRUN): self._sending_move_ack=True
+        elif(instruct==PMessage.M_START_FASTRUN):
+            self._sending_move_ack=True
+
         elif(instruct==PMessage.M_RESET):self.reset()
         # simulate the delay in real execution
         time.sleep(self.EXECUTION_DELAY)
