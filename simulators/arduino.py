@@ -74,6 +74,8 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
         self._switch_sensor_btn.grid(row=0,column=3)
         self._trace_robot_btn = Button(master=fr,text="trace",command=self.start_tracing)
         self._trace_robot_btn.grid(row=0,column=4)
+        self._mf_btn = Button(master=fr,text="forward",command=self._controller.move_forward)
+        self._mf_btn.grid(row=0,column=5)
 
     def start_tracing(self):
         if (self._robotUI.is_tracing()):

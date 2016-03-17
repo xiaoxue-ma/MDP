@@ -119,6 +119,7 @@ class MapUpdateMiddleware(BaseMiddleware):
     map_update_sent_in_list = False
 
     # for debugging purpose
+    _SAVE_MAP_TRACE = False
     map_trace_num = 0
     map_trace_file_name = "map-trace.txt"
 
@@ -128,6 +129,8 @@ class MapUpdateMiddleware(BaseMiddleware):
         sensor_values = map(int,msg.get_msg().split(","))
         clear_pos_list,obstacle_pos_list = self.update_map(sensor_values)
         map_update_to_send = [clear_pos_list,obstacle_pos_list] if self.map_update_sent_in_list else ",".join([str(i) for i in sensor_values])
+        if (self._SAVE_MAP_TRACE):
+            self.save_map_trace()
         return [],[PMessage(type=PMessage.T_MAP_UPDATE,msg=map_update_to_send)]
 
     def update_map(self,sensor_values):
@@ -167,6 +170,21 @@ class MapUpdateMiddleware(BaseMiddleware):
                         map_str += cell_format.format("?")
             map_str += "\n"
         return map_str
+
+class MapUpdateMiddlewareUsingMapBuffer(MapUpdateMiddleware):
+    """
+    To use this, map_ref must be a MapRefWithBuffer object
+    """
+    def process_input(self,label,msg):
+        cmd_ls,data_ls = super(MapUpdateMiddlewareUsingMapBuffer,self).process_input(label,msg)
+        if (hasattr(self._map_ref,"retrieve_updated_cells")):
+            cells = self._map_ref.retrieve_updated_cells()
+            if (cells):
+                return [],[PMessage(type=PMessage.T_UPDATE_MAP_STATUS,msg="|".join(["{},{},{}".format(x,y,o) for x,y,o in cells]))]
+            else:
+                return [],[]
+        else:
+            return cmd_ls,data_ls
 
 # class MapUpdateMiddlewareAsPublisher(MapUpdateMiddleware,BasePublisher):
 #     """

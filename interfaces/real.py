@@ -10,7 +10,6 @@ from common.pmessage import PMessage,ValidationException
 from common.debug import debug,DEBUG_INTERFACE,DEBUG_VALIDATION
 from interfaces.config import *
 
-
 # TO_SER = dict({PMessage.M_MOVE_FORWARD: "0", PMessage.M_TURN_RIGHT: "1", PMessage.M_TURN_LEFT: "2",
 #                PMessage.M_TURN_BACK: "3", PMessage.M_START_EXPLORE: "4", PMessage.M_END_EXPLORE: "5",
 #                PMessage.M_START_FASTRUN: "6", })
@@ -26,6 +25,7 @@ FROM_SER = {value:key for key,value in TO_SER.items()}
 
 class ArduinoInterface(Interface):
     name = ARDUINO_LABEL
+    _write_delay = 1
 
     def __init__(self):
         super(ArduinoInterface,self).__init__()
@@ -53,32 +53,32 @@ class ArduinoInterface(Interface):
 
 
     def read(self):
-        if self.ser.inWaiting():
-            try:
-                msg = self.ser.readline()
-                if msg != "":
-                    print "SER--Read from Arduino: %s" % str(msg)
-                    if len(msg) > 5:
-                        if msg[1] != ' ':
-                            realmsg = PMessage(type=PMessage.T_MAP_UPDATE, msg=msg)
-                            return (self.name,realmsg)
-                    else:
-                        msg = msg[0]
-                        if msg < '4':
-                            realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=FROM_SER.get(msg[0]))
-                            return (self.name,realmsg)
-            except ValidationException as e:
-                debug("validation exception: {}".format(e.message),DEBUG_VALIDATION)
-            except Exception, e:
-                debug("SER--read exception: %s" % str(e),DEBUG_INTERFACE)
-                self.reconnect()
+        # if self.ser.inWaiting():
+        try:
+            msg = self.ser.readline()
+            if msg != "":
+                print "SER--Read from Arduino: %s" % str(msg)
+                if len(msg) > 5:
+                    if msg[1] != ' ':
+                        realmsg = PMessage(type=PMessage.T_MAP_UPDATE, msg=msg)
+                        return realmsg
+                else:
+                    msg = msg[0]
+                    if msg < '4':
+                        realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=FROM_SER.get(msg[0]))
+                        return realmsg
+        except ValidationException as e:
+            debug("validation exception: {}".format(e.message),DEBUG_VALIDATION)
+        except Exception, e:
+            debug("SER--read exception: %s" % str(e),DEBUG_INTERFACE)
+            self.reconnect()
 
     def write(self, msg):
         try:
             realmsg = TO_SER.get(msg.get_msg())
             if realmsg:
                 self.ser.write(realmsg)
-                time.sleep(1)
+                time.sleep(self._write_delay)
                 debug("SER--Write to Arduino: %s" % str(msg),DEBUG_INTERFACE)
         except Exception, e:
             debug("SER--write exception: %s" % str(e),DEBUG_INTERFACE)

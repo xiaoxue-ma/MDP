@@ -57,6 +57,12 @@ class RobotRef(RobotSettings,BasePublisher):
         pos_change = self._ori.to_pos_change()
         self.set_position((self._pos[0]+pos_change[0],self._pos[1]+pos_change[1]))
 
+    def shift_right(self):
+        "shift the robot position to its right, should only be used to do position correction"
+        delta_x,delta_y = self._ori.to_right().to_pos_change()
+        new_x,new_y = sum_coordinate(self._pos,(delta_x,delta_y))
+        self.set_position((new_x,new_y))
+
     def execute_command(self,command):
         if (command==PMessage.M_TURN_RIGHT): self.turn_right()
         elif (command==PMessage.M_TURN_LEFT): self.turn_left()
@@ -67,7 +73,8 @@ class RobotRef(RobotSettings,BasePublisher):
     def get_sides_fully_blocked(self,map_ref):
         "return a list of RelativeOri"
         x,y = self._pos[0],self._pos[1]
-        sides_to_check = [FRONT,LEFT,RIGHT]
+        #sides_to_check = [FRONT,LEFT,RIGHT]
+        sides_to_check = [FRONT,RIGHT]
         fully_blocked_sides = []
         for i in range(len(sides_to_check)):
             # check whether the side is fully blocked

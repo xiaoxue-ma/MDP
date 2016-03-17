@@ -78,18 +78,19 @@ def get_or_exception(kwargs,key,err_msg=""):
         raise Exception(err)
     return value
 
-def create_or_append_file(file_name,content):
+def create_or_append_file(file_name,content,overwrite=False):
     # create the file if not exists
     if not os.path.exists(file_name):
         f = open(file_name,"w")
         f.close()
     else: # file exists, try creating another one
-        file_exist = True
-        prepend_num = 0
-        while(file_exist):
-            prepend_num += 1
-            file_exist = os.path.exists("{}_{}".format(prepend_num,file_name))
-        file_name = "{}_{}".format(prepend_num,file_name)
+        if (not overwrite):
+            file_exist = True
+            prepend_num = 0
+            while(file_exist):
+                prepend_num += 1
+                file_exist = os.path.exists("{}_{}".format(prepend_num,file_name))
+            file_name = "{}_{}".format(prepend_num,file_name)
     # append map to it
     with open(file_name,"a") as f:
         f.write(content+"\n")

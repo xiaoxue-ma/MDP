@@ -2,6 +2,7 @@ import time
 from thread import start_new_thread
 
 from common.robot import RobotRef
+from common.amap import MapRefWithBuffer,MapRef
 from common.timer import timed_call
 from common.debug import debug,DEBUG_STATES
 from fsm.states import ReadyState
@@ -41,7 +42,7 @@ class CentralController(StateMachine):
 
     def reset(self):
         # state must be init after map_ref and robot_ref
-        self._map_ref = MapRef()
+        self._map_ref = MapRefWithBuffer()
         self._robot_ref = RobotRef()
         self._state = ReadyState(machine=self)
 

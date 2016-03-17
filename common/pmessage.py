@@ -15,15 +15,18 @@ class PMessage():
     T_ROBOT_MOVE = "rm"
     T_MAP_UPDATE = "mu"
     T_SET_ROBOT_POS = "setrobotpos" # msg should be like 1,2
+    T_UPDATE_ROBOT_STATUS = "ur" # msg should be x,y,o
+    T_UPDATE_MAP_STATUS = "ums" # msg should be a list of tuples
     T_CALLIBRATE = "callibrate"
     #TODO: for simulation only
     T_LOAD_MAP = "loadmap" # msg should be map path
 
     # for msg
-    M_MOVE_INSTRUCTIONS = M_MOVE_FORWARD,M_TURN_LEFT,M_TURN_RIGHT,M_TURN_BACK = ["mf",
+    M_MOVE_INSTRUCTIONS = M_MOVE_FORWARD,M_TURN_LEFT,M_TURN_RIGHT,M_TURN_BACK,M_SHIFT_RIGHT = ["mf",
                                                                                  "tl",
                                                                                  "tr",
-                                                                                 "tb"]
+                                                                                 "tb",
+                                                                                 "sr"]
     M_OTHER_INSTRUCTIONS = M_START_EXPLORE,M_END_EXPLORE,M_START_FASTRUN,M_RESET,M_CALIBRATE,M_GET_SENSOR = ["explore",
                                                                                                 "endexplore",
                                                                                                 "run",
@@ -99,13 +102,22 @@ class PMessage():
             except:
                 raise ValidationException("{} is not a valid map update".format(msg))
         elif(type==PMessage.T_SET_ROBOT_POS):
-            try:
-                values = map(int,msg.strip().split(","))
-            except:
-                raise ValidationException("{} is not a valid robot position".format(msg))
-            if (len(values)!=2):
-                raise ValidationException("{} is not a valid robot position".format(msg))
+            PMessage.validate_int_list(msg,2)
+        elif(type==PMessage.T_UPDATE_ROBOT_STATUS):
+            PMessage.validate_int_list(msg,3)
+        elif(type==PMessage.T_UPDATE_MAP_STATUS):
+            #TODO: validate this
+            return
         elif(type==PMessage.T_LOAD_MAP or type==PMessage.T_CALLIBRATE):
             return
         else:
             raise ValidationException("{} is not a valid message type".format(type))
+
+    @staticmethod
+    def validate_int_list(ls_str,expected_len):
+        try:
+            values = map(int,ls_str.strip().split(","))
+        except:
+            raise ValidationException("{} is not a valid int list".format(ls_str))
+        if (len(values)!=expected_len):
+            raise ValidationException("{} has length {}, expected {}".format(ls_str,len(values),expected_len))

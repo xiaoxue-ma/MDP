@@ -244,6 +244,8 @@ class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
                 return False
         return True
 
+    def is_along_wall(self,x,y):
+        return x==0 or x==self.size_x-1 or y==0 or y==self.size_y-1
 
     def get_surrounding_pos(self,x,y):
         "return a list of positions that surround (x,y)"
@@ -269,15 +271,6 @@ class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
 
     def is_out_of_arena(self,x,y):
         return (x<0 or y<0 or x>=self.size_x or y>=self.size_y)
-
-    def set_map_range(self,x_range,y_range,type):
-        "set map_ref cells bounded by x range and y range (both sides inclusive) to `type`"
-        for j in range(min(y_range[0],y_range[1]),max(y_range[0],y_range[1])+1):
-            if (j<0 or j>=self.size_y): continue
-            for i in range(min(x_range[0],x_range[1]),max(x_range[0],x_range[1])+1):
-                if (i<0 or i>=self.size_x): continue
-                self.set_cell(x=i,y=j,value=type)
-                self.notify([(i,j)])
 
     def get_num_obstacles(self):
         return sum([1 if self.get_cell(x,y)==MapSetting.OBSTACLE else 0
@@ -316,6 +309,33 @@ class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
     def notify(self,data=None):
         debug("Map updated",DEBUG_COMMON)
         super(MapRef,self).notify(data=data)
+
+
+class MapRefWithBuffer(MapRef):
+    _buffered_changes = None
+
+    def reset(self,*args,**kwargs):
+        self._buffered_changes = set()
+        super(MapRefWithBuffer,self).reset(*args,**kwargs)
+
+
+    def set_cell(self,x,y,value,notify=True):
+        super(MapRefWithBuffer,self).set_cell(x,y,value,notify)
+        if (not self.is_out_of_arena(x,y)):
+            self._buffered_changes.add((x,y,self.get_cell(x,y)))
+
+    def set_cell_list(self,pos_list,value,notify=True,maintain_obstacle=True,maintain_clear=False):
+        super(MapRefWithBuffer,self).set_cell_list(pos_list,value,notify,maintain_obstacle,maintain_clear)
+        for x,y in pos_list:
+            if (not self.is_out_of_arena(x,y)):
+                self._buffered_changes.add((x,y,self.get_cell(x,y)))
+
+    def retrieve_updated_cells(self):
+        "return the whole buffer and empty it"
+        reply = list(self._buffered_changes)
+        self._buffered_changes = set()
+        return reply
+
 
 class MapUI(BaseObserver):
     """

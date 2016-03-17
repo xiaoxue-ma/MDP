@@ -4,6 +4,7 @@ from thread import start_new_thread
 
 from common.pmessage import PMessage
 from common.amap import MapRef,MapSetting
+from common.orientation import AbsoluteOrientation
 from interfaces.base import SocketClientInterface
 from common.popattern import BasePublisher
 from interfaces.config import *
@@ -62,6 +63,9 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
 
     def get_server_port(self):
         return ARDUINO_SERVER_PORT
+
+    def move_forward(self):
+        self._robot.move_forward()
 
     def send_sensor_data(self):
         "send sensor reading to client"
@@ -198,6 +202,19 @@ class AndroidController(BasePublisher,BaseSimulatorController):
                     self._map_ref.set_fixed_cells(self._robot.get_occupied_postions(),MapSetting.CLEAR)
                     self._map_ref.notify(pos_list)
                     self._robot.execute_command(msg_obj.get_msg())
+
+                elif (msg_obj.get_type()==PMessage.T_UPDATE_ROBOT_STATUS):
+                    self._map_ref.set_fixed_cells(self._robot.get_occupied_postions(),MapSetting.CLEAR)
+                    self._map_ref.notify(self._robot.get_occupied_postions())
+                    ls = map(int,msg_obj.get_msg().split(","))
+                    self._robot.set_position((ls[0],ls[1]))
+                    self._robot.set_orientation(AbsoluteOrientation.get_instance(ls[2]))
+                elif (msg_obj.get_type()==PMessage.T_UPDATE_MAP_STATUS):
+                    update_ls = msg_obj.get_msg().split("|")
+                    for update in update_ls:
+                        x,y,value = map(int,update.split(","))
+                        self._map_ref.set_cell(x,y,value)
+                    self._robot.refresh()
 
 
     def get_cur_coverage(self):

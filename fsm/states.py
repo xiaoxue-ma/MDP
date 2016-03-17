@@ -131,7 +131,7 @@ class ExplorationState(StateMachine,BaseState):
         self._map_ref = self._machine.get_map_ref()
         self._robot_ref = self._machine.get_robot_ref()
         self.clear_middlewares()
-        self._mapupdate_mid = MapUpdateMiddleware(state=self)
+        self._mapupdate_mid = MapUpdateMiddlewareUsingMapBuffer(state=self)
         self.add_middleware(self._mapupdate_mid)
         self.set_next_state(ExplorationStateWithTimerAndCallibration(machine=self))
 
@@ -165,6 +165,7 @@ class ExplorationFirstRoundState(BaseState):
     """
     _explore_algo = None
     _end_coverage_threshold = 60 #TODO: this is hardcoded
+    _USE_ROBOT_STATUS_UPDATE = True
 
     def __init__(self,*args,**kwargs):
         super(ExplorationFirstRoundState,self).__init__(*args,**kwargs)
@@ -188,14 +189,24 @@ class ExplorationFirstRoundState(BaseState):
         self._map_ref.set_fixed_cells(self._robot_ref.get_occupied_postions(),MapSetting.CLEAR)
         if(self._robot_ref.get_position()==self._map_ref.get_start_zone_center_pos() and 100-self._map_ref.get_unknown_percentage()>self._end_coverage_threshold):
             self.trigger_end_exploration()
-        return [],[PMessage(type=PMessage.T_ROBOT_MOVE,msg=move)]
+
+        if (self._USE_ROBOT_STATUS_UPDATE):
+            data_ls = [PMessage(type=PMessage.T_UPDATE_ROBOT_STATUS,msg="{},{},{}".format(
+            self._robot_ref.get_position()[0],
+            self._robot_ref.get_position()[1],
+            self._robot_ref.get_orientation().get_value()
+        ))]
+        else:
+            data_ls = [PMessage(type=PMessage.T_ROBOT_MOVE,msg=move)]
+
+        return [],data_ls
 
     def trigger_end_exploration(self):
         self._machine.end_exploration()
 
 class ExplorationFirstRoundStateWithTimer(ExplorationFirstRoundState):
     _timer = None # timer for sending extra command in case map update not sent back in time
-    _MAP_UPDATE_TIME_LIMIT = 6
+    _MAP_UPDATE_TIME_LIMIT = 1E6
 
     def __init__(self,*args,**kwargs):
         super(ExplorationFirstRoundStateWithTimer,self).__init__(*args,**kwargs)
@@ -222,12 +233,17 @@ class ExplorationStateWithTimerAndCallibration(ExplorationFirstRoundStateWithTim
     """
     wrapper class that sends additional Callibration message upon ack of robot move
     """
-
+    _DO_ROBOT_POS_CORRECTION = True
 
     def ack_move_to_android(self,move):
         cmd_ls,data_ls = super(ExplorationStateWithTimerAndCallibration,self).ack_move_to_android(move)
         # detect whether the robot is at a corner, send callibrate command if so
         blocked_sides = self._robot_ref.get_sides_fully_blocked(self._map_ref)
+        shift_right = self.correct_robot_position(blocked_sides)
+        # if (shift_right):
+        #     data_msgs_to_send = [PMessage(type=PMessage.T_ROBOT_MOVE,msg=PMessage.M_SHIFT_RIGHT)]
+        # else:
+        #     data_msgs_to_send = []
         # currently let arduino callibrate right itself
         if (len(blocked_sides)==1 and blocked_sides[0]==RIGHT):
             callibration_msgs_to_send=[]
@@ -245,6 +261,17 @@ class ExplorationStateWithTimerAndCallibration(ExplorationFirstRoundStateWithTim
         }
         return [PMessage(type=PMessage.T_CALLIBRATE,msg=ORI_TO_MSG[s]) for s in sides]
 
+    def correct_robot_position(self,block_sides):
+        "move robot to the wall if >=3 obstacles detected along wall, return True if robot is shifted right"
+        if (not self._DO_ROBOT_POS_CORRECTION):
+            return False
+        if RIGHT in block_sides:
+            delta_x,delta_y = RIGHT.to_pos_change(self._robot_ref.get_orientation())
+            x,y = sum_coordinate(self._robot_ref.get_position(),(delta_x*2,delta_y*2))
+            if (self._map_ref.is_along_wall(x,y)):
+                self._robot_ref.shift_right()
+                self._map_ref.set_fixed_cells(self._robot_ref.get_occupied_postions(),MapSetting.CLEAR)
+                return True
 
 #TODO: this class is currently unused
 class ExplorationSecondRoundState(BaseState):
