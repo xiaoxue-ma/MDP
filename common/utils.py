@@ -78,22 +78,22 @@ def get_or_exception(kwargs,key,err_msg=""):
         raise Exception(err)
     return value
 
-def create_or_append_file(file_name,content,overwrite=False):
-    # create the file if not exists
-    if not os.path.exists(file_name):
-        f = open(file_name,"w")
-        f.close()
-    else: # file exists, try creating another one
-        if (not overwrite):
-            file_exist = True
-            prepend_num = 0
-            while(file_exist):
-                prepend_num += 1
-                file_exist = os.path.exists("{}_{}".format(prepend_num,file_name))
-            file_name = "{}_{}".format(prepend_num,file_name)
-    # append map to it
-    with open(file_name,"a") as f:
-        f.write(content+"\n")
+def create_or_append_file(file_name,content,overwrite=True):
+    "create file and write content if first time calling, append content to file if not"
+    # update static var: file_list
+    if (not hasattr(create_or_append_file,"file_list")):
+        create_or_append_file.file_list = [file_name]
+    else:
+        if (not file_name in create_or_append_file.file_list):
+            create_or_append_file.file_list.append(file_name)
+    # write or append file
+    if (file_name in create_or_append_file.file_list):
+        with open(file_name,"a") as f:
+            f.write(content+"\n")
+    else:
+        with open(file_name,"w") as f:
+            f.write(content+"\n")
+
 
 # unused
 def synchronized(lock):

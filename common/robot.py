@@ -38,10 +38,12 @@ class RobotRef(RobotSettings,BasePublisher):
 
     def set_orientation(self,ori):
         self._ori = ori
+        debug("Robot ori set to {}".format(self._ori.get_value()),DEBUG_COMMON)
         self.notify()
 
     def set_position(self,pos_tuple):
         self._pos = pos_tuple
+        debug("Robot position set to {}".format(self._pos),DEBUG_COMMON)
         self.notify()
 
     def turn_left(self):
@@ -176,6 +178,45 @@ class RobotRef(RobotSettings,BasePublisher):
 
     def get_head_position(self):
         return sum_coordinate(self._pos,self._ori.to_pos_change())
+
+class RobotRefWithMemory(RobotRef):
+    """
+    Wrapper class of RobotRef that will record all ori and pos changes
+    """
+    _history_pos = None # list of history positions, from early to late
+    _history_ori = None
+
+    def __init__(self,*args,**kwargs):
+        super(RobotRefWithMemory,self).__init__(*args,**kwargs)
+        self._history_pos = []
+        self._history_ori = []
+
+    def set_orientation(self,ori):
+        super(RobotRefWithMemory,self).set_orientation(ori)
+        self._history_ori.append(ori)
+        self._history_pos.append(self.get_position())
+
+    def set_position(self,pos_tuple):
+        super(RobotRefWithMemory,self).set_position(pos_tuple)
+        self._history_ori.append(self.get_orientation())
+        self._history_pos.append(pos_tuple)
+
+    def has_continuous_straight_moves(self,num):
+        if (len(self._history_ori)>=num and len(self._history_pos)>=num):
+            return self.all_equal(self._history_ori[-num:]) and\
+                   (self.all_equal([x[0] for x in self._history_pos[-num:]]) or
+                       self.all_equal([x[1] for x in self._history_pos[-num:]]))
+
+    def all_equal(self,ls):
+        for i in range(len(ls)-1):
+            if (ls[i]!=ls[i+1]):
+                return False
+        return True
+
+    def clear_history(self):
+        self._history_pos = []
+        self._history_ori = []
+
 
 class RobotUI(RobotSettings,BaseObserver):
     """

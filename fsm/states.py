@@ -233,7 +233,7 @@ class ExplorationStateWithTimerAndCallibration(ExplorationFirstRoundStateWithTim
     """
     wrapper class that sends additional Callibration message upon ack of robot move
     """
-    _DO_ROBOT_POS_CORRECTION = True
+    _DO_ROBOT_POS_CORRECTION = False
     _SEND_CALLIBRATION_CMD = False
 
     def ack_move_to_android(self,move):
@@ -254,14 +254,27 @@ class ExplorationStateWithTimerAndCallibration(ExplorationFirstRoundStateWithTim
         self._map_ref.set_fixed_cells(self._robot_ref.get_occupied_postions(),MapSetting.CLEAR)
         return callibration_msgs_to_send+cmd_ls,data_ls
 
+    #TODO: this is the callibration logic
     def get_callibration_msgs(self,sides):
         "return a list of PMessage"
-        ORI_TO_MSG = {
-            FRONT:PMessage.M_CALLIBRATE_FRONT,
-            LEFT:PMessage.M_CALLIBRATE_LEFT,
-            RIGHT: PMessage.M_CALLIBRATE_RIGHT
-        }
-        return [PMessage(type=PMessage.T_CALLIBRATE,msg=ORI_TO_MSG[s]) for s in sides]
+        if (len(sides)==1 and sides[0]==RIGHT and self._robot_ref.has_continuous_straight_moves(3)):
+            # if right side fully blocked, send callibration if there's at least 3 straight moves
+            debug("more than 3 straight moves in a row",DEBUG_STATES)
+            self._robot_ref.clear_history()
+            return [PMessage(type=PMessage.T_CALLIBRATE,msg=PMessage.M_CALLIBRATE_RIGHT)]
+        elif(len(sides)==1 and sides[0]==FRONT):
+            # if front side fully blocked, callibrate
+            return [PMessage(type=PMessage.T_CALLIBRATE,msg=PMessage.M_CALLIBRATE_FRONT)]
+        elif (len(sides)>1):
+            # if at corner, callibrate
+            ORI_TO_MSG = {
+                FRONT:PMessage.M_CALLIBRATE_FRONT,
+                LEFT:PMessage.M_CALLIBRATE_LEFT,
+                RIGHT: PMessage.M_CALLIBRATE_RIGHT
+            }
+            return [PMessage(type=PMessage.T_CALLIBRATE,msg=ORI_TO_MSG[s]) for s in sides]
+        else:
+            return [],[]
 
     def correct_robot_position(self,block_sides):
         "move robot to the wall if >=3 obstacles detected along wall, return True if robot is shifted right"

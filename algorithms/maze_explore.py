@@ -8,6 +8,7 @@ class MazeExploreAlgo():
     _robot = None # reference to robot object
     _map_ref = None # reference to map array
     _history_ls = None # list of position, orientation tuples
+    _CHECK_HISTORY_FOR_LOOP = False
 
     CAN_ACCESS,CANNOT_ACCESS,UNSURE = 1,2,3
     # in the exploration, the robot will attempt the following action in sequence
@@ -68,14 +69,15 @@ class MazeExploreAlgo():
 
     def move_along_wall(self):
         # check whether the robot has gone into a cycle
-        if ((self._robot.get_position(),self._robot.get_orientation()) in self._history_ls):
-            self.action_precedence = [PMessage.M_TURN_RIGHT,PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT]
-            debug("Loop detected, go back",DEBUG_ALGO)
-            self._history_ls = []
-            return PMessage.M_TURN_BACK
-        else:
-            debug("History: pos({}), orientation({})".format(self._robot.get_position(),self._robot.get_orientation()),DEBUG_ALGO)
-            self._history_ls.append((self._robot.get_position(),self._robot.get_orientation()))
+        if (self._CHECK_HISTORY_FOR_LOOP):
+            if ((self._robot.get_position(),self._robot.get_orientation()) in self._history_ls):
+                self.action_precedence = [PMessage.M_TURN_RIGHT,PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT]
+                debug("Loop detected, go back",DEBUG_ALGO)
+                self._history_ls = []
+                return PMessage.M_TURN_BACK
+            else:
+                debug("History: pos({}), orientation({})".format(self._robot.get_position(),self._robot.get_orientation()),DEBUG_ALGO)
+                self._history_ls.append((self._robot.get_position(),self._robot.get_orientation()))
 
         for action in self.action_precedence:
             ori = self.get_ori_to_check(desired_action=action)

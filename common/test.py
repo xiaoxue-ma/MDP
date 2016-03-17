@@ -22,11 +22,6 @@ def test_q():
     print(q.dequeue())
     print(q.dequeue())
 
-def test_network():
-    server=SocketServer(addr="172.22.164.11",port=9004)
-    server.start()
-    raw_input("pause...")
-
 def main():
     print(os.path.dirname(__file__))
     convert_text_to_binary("map-7.txt")
@@ -97,4 +92,4 @@ def test_multithread():
         pass
 
 if __name__ == '__main__':
-    test_q()
+    convert_binary_to_text("eve.txt")
