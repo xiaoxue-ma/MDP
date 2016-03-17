@@ -10,7 +10,6 @@ from fsm.machine import *
 from algorithms.shortest_path import *
 
 
-
 class CentralController(StateMachine):
     """
     run control_task method to start running the controller

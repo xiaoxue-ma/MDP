@@ -7,8 +7,8 @@ class AStarShortestPathAlgo():
 
     # algo settings
     NON_ACCESS_H_VALUE = 1E6
-    UNIT_TURN_COST = 20 # cost for every turn
-    UNIT_MOVE_COST = 10
+    UNIT_TURN_COST = 2 # cost for every turn
+    UNIT_MOVE_COST = 1
     END_ALGO_UPON_REACHING_DEST = True
 
     # algo data
@@ -23,6 +23,14 @@ class AStarShortestPathAlgo():
 
     def get_shortest_path(self,robot_pos,robot_ori):
         "return a list of commands for walking through the shortest path"
+        self._build_search_tree(robot_pos=robot_pos,robot_ori=robot_ori)
+        start_node = self._nodes[robot_pos[1]][robot_pos[0]]
+        dest_node = self._nodes[self._target_pos[1]][self._target_pos[0]]
+        # return list of commands
+        self.print_route(dest_node=dest_node,start_node=start_node)
+        return self.get_command_list(start_node=start_node,end_node=dest_node)
+
+    def _build_search_tree(self,robot_pos,robot_ori):
         num_iterations=1
         node_q = MinQueue(key=lambda x:x.get_f()) # queue of (x,y) positions
         start_node = self._nodes[robot_pos[1]][robot_pos[0]]
@@ -52,13 +60,15 @@ class AStarShortestPathAlgo():
                 else: # not visited
                     n.parent = cur_node
                     n.set_g(new_g)
+                    n.visited = True
                     debug("[Create parent] Attach {} to node {}".format(n.get_desc(),cur_node.get_desc()),DEBUG_ALGO)
                     n.ori = AbsoluteOrientation.get_ori_at_dest(start_pos=(cur_node.x,cur_node.y),dest_pos=(n.x,n.y))
                     node_q.enqueue(n)
         debug("number of iterations for finding shortest path: {}".format(num_iterations),DEBUG_ALGO)
-        # return list of commands
-        self.print_route(dest_node=dest_node,start_node=start_node)
-        return self.get_command_list(start_node=start_node,end_node=dest_node)
+
+    def _get_nodes(self):
+        return self._nodes
+
 
     def _get_inaccessible_pos_list(self,map_ref):
         "pos where robot will collide with obstacles or the wall"

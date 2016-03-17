@@ -390,6 +390,11 @@ class MapUI(BaseObserver):
         else:
             return self.CELL_COLORS[self._map_ref.get_cell(x,y)]
 
+    def paint_text(self,x,y,text):
+        self._cells[y][x].config(text=text)
+
+    def paint_color(self,x,y,color):
+        self._cells[y][x].config(bg=color)
 
     # observer method
     def update(self,data=None):

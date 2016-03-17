@@ -19,16 +19,16 @@ DEBUG_COMMON = "c" # refering to amap and robot
 # change this to enable/disable types of debug messages
 DEBUG_SETTING = {
     "enabled_types":[
-    #DEBUG_VALIDATION,
+    DEBUG_VALIDATION,
     #DEBUG_IO_QUEUE,
     DEBUG_INTERFACE,
-    DEBUG_STATES,
+    #DEBUG_STATES,
     #DEBUG_MIDDLEWARE,
-    DEBUG_OTHERS,
+    #DEBUG_OTHERS,
     #DEBUG_TIMER,
     #DEBUG_ALGO
     ],
-    "save_file":False,
+    "save_file":True,
     "file_name":"debug.txt" # without extension
 }
 

@@ -234,6 +234,7 @@ class ExplorationStateWithTimerAndCallibration(ExplorationFirstRoundStateWithTim
     wrapper class that sends additional Callibration message upon ack of robot move
     """
     _DO_ROBOT_POS_CORRECTION = True
+    _SEND_CALLIBRATION_CMD = False
 
     def ack_move_to_android(self,move):
         cmd_ls,data_ls = super(ExplorationStateWithTimerAndCallibration,self).ack_move_to_android(move)
@@ -245,10 +246,11 @@ class ExplorationStateWithTimerAndCallibration(ExplorationFirstRoundStateWithTim
         # else:
         #     data_msgs_to_send = []
         # currently let arduino callibrate right itself
-        if (len(blocked_sides)==1 and blocked_sides[0]==RIGHT):
-            callibration_msgs_to_send=[]
-        else:
+        if (self._SEND_CALLIBRATION_CMD and
+                (len(blocked_sides)>1 or len(blocked_sides)==1 and blocked_sides[0]==RIGHT)):
             callibration_msgs_to_send = self.get_callibration_msgs(blocked_sides)
+        else:
+            callibration_msgs_to_send=[]
         self._map_ref.set_fixed_cells(self._robot_ref.get_occupied_postions(),MapSetting.CLEAR)
         return callibration_msgs_to_send+cmd_ls,data_ls
 

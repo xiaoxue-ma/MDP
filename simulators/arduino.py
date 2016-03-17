@@ -4,6 +4,7 @@ import time
 
 from common.robot import *
 from common.amap import *
+from algorithms.shortest_path import AStarShortestPathAlgo
 
 from simulators.controllers import ArduinoController
 
@@ -76,6 +77,28 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
         self._trace_robot_btn.grid(row=0,column=4)
         self._mf_btn = Button(master=fr,text="forward",command=self._controller.move_forward)
         self._mf_btn.grid(row=0,column=5)
+        self._sp_btn = Button(master=fr,text="path",command=self.show_path)
+        self._sp_btn.grid(row=0,column=6)
+
+    #TODO: this is for debugging purpose only
+    def show_path(self):
+        map_ref = self._controller.get_map_ref()
+        robot_ref = self._controller.get_robot_ref()
+        algo = AStarShortestPathAlgo(map_ref=map_ref,target_pos=(13,1))
+        algo._build_search_tree(robot_pos=robot_ref.get_position(),robot_ori=robot_ref.get_orientation())
+        nodes = algo._get_nodes()
+        # paint f values
+        for y in range(len(nodes)):
+            for x in range(len(nodes[0])):
+                if (nodes[y][x]):
+                    f = nodes[y][x].get_g()
+                    self._map_ui.paint_text(x,y,"{}".format(f))
+        # paint trace
+        cur_node = nodes[1][13]
+        while(cur_node.x!=1 or cur_node.y!=18):
+            self._map_ui.paint_color(cur_node.x,cur_node.y,"pink")
+            cur_node = cur_node.parent
+
 
     def start_tracing(self):
         if (self._robotUI.is_tracing()):

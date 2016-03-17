@@ -74,7 +74,7 @@ class RobotRef(RobotSettings,BasePublisher):
         "return a list of RelativeOri"
         x,y = self._pos[0],self._pos[1]
         #sides_to_check = [FRONT,LEFT,RIGHT]
-        sides_to_check = [FRONT,RIGHT]
+        sides_to_check = [FRONT,RIGHT,LEFT]
         fully_blocked_sides = []
         for i in range(len(sides_to_check)):
             # check whether the side is fully blocked

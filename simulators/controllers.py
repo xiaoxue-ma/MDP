@@ -19,6 +19,12 @@ class BaseSimulatorController():
         self._map_ref = kwargs.get("map_ref")
         self._robot = kwargs.get("robot_ref")
 
+    def get_map_ref(self):
+        return self._map_ref
+
+    def get_robot_ref(self):
+        return self._robot
+
     def run(self):
         # init client connection
         self._client = SocketClientInterface(ip=self.get_server_addr(),port=self.get_server_port())
