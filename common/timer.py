@@ -70,10 +70,12 @@ class Timer(object):
         self._interval_callback = kwargs.get("interval_callback",None)
         self._end_callback = kwargs.get("end_callback",None)
         self._thread = TimerThread(time_limit=self._limit,interval_callback=self._interval_callback,end_callback=self._end_callback)
+        self._thread.daemon = True
 
     def start(self):
         self._thread.stop()
         self._thread = TimerThread(time_limit=self._limit,interval_callback=self._interval_callback,end_callback=self._end_callback)
+        self._thread.daemon = True
         self._thread.start()
 
     def is_timing(self):
