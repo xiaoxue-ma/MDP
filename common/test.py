@@ -92,4 +92,4 @@ def test_multithread():
         pass
 
 if __name__ == '__main__':
-    convert_binary_to_text("eve.txt")
+    convert_text_to_binary("w2.txt")

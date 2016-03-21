@@ -30,7 +30,7 @@ DEBUG_SETTING = {
     #DEBUG_TIMER,
     #DEBUG_ALGO
     ],
-    "save_file":True,
+    "save_file":False,
 }
 
 

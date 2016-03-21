@@ -5,6 +5,7 @@ Run main() to start running
 
 from Queue import Queue
 import thread
+import threading
 
 from common.debug import debug,DEBUG_IO_QUEUE
 from interfaces.config import ARDUINO_LABEL,ANDROID_LABEL,PC_LABEL
@@ -34,7 +35,9 @@ def read_from_interface(to_queue, interface,label):
 def connect_interfaces(interfaces):
     """connect a list of interfaces"""
     for interface in interfaces:
-        thread.start_new_thread(interface.connect,())
+        t = threading.Thread(target=interface.connect)
+        t.daemon = True
+        t.start()
 
 
 def main(use_mock_arduino=False):

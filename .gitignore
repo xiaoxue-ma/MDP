@@ -4,6 +4,7 @@
 *.png
 algorithms/test.py
 venv
+*.txt
 
 #references
 MDP-Jan-2015/
