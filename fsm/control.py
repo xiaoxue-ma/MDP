@@ -61,6 +61,10 @@ class CentralController(StateMachine):
         except Exception,e:
             pass
 
+    def send_data_pmsg(self,pmsg):
+        for q in self._data_out_qs:
+            self._enqueue_list(q,[pmsg])
+
     # allow delay is deprecated
     def _enqueue_list(self,q,list,allow_delay=False):
         "enqueue list items on another thread"

@@ -91,7 +91,7 @@ class PMessage():
             if (msg not in PMessage.M_VALID_COMMAND_MSGS):
                 raise ValidationException("{} is not a valid command".format(msg))
         elif(type==PMessage.T_ROBOT_MOVE):
-            if (msg not in PMessage.M_MOVE_INSTRUCTIONS):
+            if (msg not in PMessage.M_MOVE_INSTRUCTIONS and msg!=PMessage.M_START_FASTRUN):
                 raise ValidationException("{} is not a valid robot move".format(msg))
         elif(type==PMessage.T_STATE_CHANGE):
             return

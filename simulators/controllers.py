@@ -117,6 +117,9 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
                 elif (msg_obj.get_type()==PMessage.T_COMMAND and msg_obj.get_msg()==PMessage.M_GET_SENSOR):
                     self.send_sensor_data()
                     continue
+                elif (msg_obj.get_msg()==PMessage.M_START_FASTRUN):
+                    self.send_data(type=PMessage.T_ROBOT_MOVE,data=PMessage.M_START_FASTRUN)
+                    continue
                 elif(msg_obj.get_type()==PMessage.T_CALLIBRATE):
                     self.do_callibration(msg_obj.get_msg())
                     continue

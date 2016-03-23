@@ -149,9 +149,10 @@ class ExplorationState(StateMachine,BaseState):
         return cmd_list,data_list
 
     def end_exploration(self):
-        if (self._MAX_POSSIBLE_OBSTACLES!=-1 and self._map_ref.get_num_obstacles()>=self._MAX_POSSIBLE_OBSTACLES):
-            self._map_ref.set_unknowns_as_clear()
+        # if (self._MAX_POSSIBLE_OBSTACLES!=-1 and self._map_ref.get_num_obstacles()>=self._MAX_POSSIBLE_OBSTACLES):
+        #     self._map_ref.set_unknowns_as_clear()
         self._map_ref.save_map_to_file("temp.bin")
+        self._machine.send_command(PMessage.M_END_EXPLORE)
         self._machine.set_next_state(ExplorationDoneState(machine=self._machine))
 
     def send_command(self,msg):
@@ -166,14 +167,16 @@ class ExplorationFirstRoundState(BaseState):
     _explore_algo = None
     _end_coverage_threshold = 60 #TODO: this is hardcoded
     _USE_ROBOT_STATUS_UPDATE = True
+    _explore_end = False
 
     def __init__(self,*args,**kwargs):
         super(ExplorationFirstRoundState,self).__init__(*args,**kwargs)
         self._explore_algo = MazeExploreAlgo(robot=self._machine.get_robot_ref(),map_ref=self._machine.get_map_ref())
+        self._explore_end = False
 
     def post_process(self,label,msg):
         # get next move
-        if (label==ARDUINO_LABEL and msg.is_map_update()):
+        if (label==ARDUINO_LABEL and msg.is_map_update() and (not self._explore_end)):
             command = self._explore_algo.get_next_move()
             self.add_robot_move_to_be_ack(command)
             return [PMessage(type=PMessage.T_COMMAND,msg=command)],\
@@ -187,7 +190,10 @@ class ExplorationFirstRoundState(BaseState):
     def ack_move_to_android(self,move):
         self._robot_ref.execute_command(move)
         self._map_ref.set_fixed_cells(self._robot_ref.get_occupied_postions(),MapSetting.CLEAR)
+        debug("Current robot position:{}".format(self._robot_ref.get_position()),DEBUG_STATES)
+        debug("Current map coverage: {}".format(100-self._map_ref.get_unknown_percentage()),DEBUG_STATES)
         if(self._robot_ref.get_position()==self._map_ref.get_start_zone_center_pos() and 100-self._map_ref.get_unknown_percentage()>self._end_coverage_threshold):
+            debug("Ending Exploration",DEBUG_STATES)
             self.trigger_end_exploration()
 
         if (self._USE_ROBOT_STATUS_UPDATE):
@@ -202,6 +208,7 @@ class ExplorationFirstRoundState(BaseState):
         return [],data_ls
 
     def trigger_end_exploration(self):
+        self._explore_end = True
         self._machine.end_exploration()
 
 class ExplorationFirstRoundStateWithTimer(ExplorationFirstRoundState):
@@ -346,6 +353,7 @@ class ExplorationDoneState(BaseState):
     """
     only accept start fast run command from android
     """
+
     def __init__(self,*args,**kwargs):
         super(ExplorationDoneState,self).__init__(*args,**kwargs)
         self.clear_middlewares()
@@ -359,38 +367,105 @@ class ExplorationDoneState(BaseState):
         type,msg = label,msg
         if (type in CMD_SOURCES and msg.get_msg()==PMessage.M_START_FASTRUN):
             # get the fast run commands
-            self.transit_state(FastRunState)
-            return self.get_commands_for_fastrun(),[]
+            self.transit_state(FastRunStateUsingExploration)
+            return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_START_FASTRUN)],[]
         return [],[]
-
-    def get_commands_for_fastrun(self):
-        "return a list of command PMessage"
-        algo = AStarShortestPathAlgo(map_ref=self._map_ref,target_pos=self._map_ref.get_end_zone_center_pos())
-        cmd_list = algo.get_shortest_path(robot_pos=self._robot_ref.get_position(),robot_ori=self._robot_ref.get_orientation())
-        return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_START_FASTRUN)] + [PMessage(type=PMessage.T_COMMAND,msg=cmd) for cmd in cmd_list]
 
 
 class FastRunState(BaseState):
     """
     only receive ack from robot
+    `cmd_buffer` : a list of commands to be sent
+    `started`: boolean
     """
+    _USE_ROBOT_STATUS_UPDATE = True
+
     def __str__(self):
         return "run"
 
     def __init__(self,*args,**kwargs):
         super(FastRunState,self).__init__(*args,**kwargs)
-        self.clear_middlewares()
+        self.started = False
+        self.cmd_buffer = []
+        self.add_expected_ack(label=ARDUINO_LABEL,msg=PMessage(type=PMessage.T_ROBOT_MOVE,msg=PMessage.M_START_FASTRUN),call_back=self.set_start)
+
+    def set_start(self):
+        self.started = True
+        self.cmd_buffer = self.get_commands_for_fastrun()
+        move = self.cmd_buffer[0]
+        self.cmd_buffer = self.cmd_buffer[1:]
+        self._machine.send_command(move)
+        self.add_expected_ack(label=ARDUINO_LABEL,msg=PMessage(type=PMessage.T_ROBOT_MOVE,msg=move),call_back=self.continue_sending_command,args=[move])
+
+    def continue_sending_command(self,move):
+        # receive ack
+        self._robot_ref.execute_command(move)
+        # update android
+        self.send_robot_update(move)
+        # if still have commands, send
+        if (self.cmd_buffer):
+            new_move = self.cmd_buffer[0]
+            self.cmd_buffer = self.cmd_buffer[1:]
+            self._machine.send_command(new_move)
+            self.add_expected_ack(label=ARDUINO_LABEL,msg=PMessage(type=PMessage.T_ROBOT_MOVE,msg=new_move),call_back=self.continue_sending_command,args=[new_move])
+        else:# end of fast run
+            self.transit_state(EndState(machine=self._machine))
+
+    def send_robot_update(self,move):
+        if (self._USE_ROBOT_STATUS_UPDATE):
+            msg = PMessage(type=PMessage.T_UPDATE_ROBOT_STATUS,msg="{},{},{}".format(
+            self._robot_ref.get_position()[0],
+            self._robot_ref.get_position()[1],
+            self._robot_ref.get_orientation().get_value()
+        ))
+        else:
+            msg = [PMessage(type=PMessage.T_ROBOT_MOVE,msg=move)]
+        self._machine.send_data_pmsg(msg)
+
+    def get_commands_for_fastrun(self):
+        "return a list of command PMessage"
+        algo = AStarShortestPathAlgo(map_ref=self._map_ref,target_pos=self._map_ref.get_end_zone_center_pos())
+        cmd_list = algo.get_shortest_path(robot_pos=self._robot_ref.get_position(),robot_ori=self._robot_ref.get_orientation())
+        return cmd_list
 
     def post_process(self,label,msg):
-        type,msg = label,msg
-        if (type==ARDUINO_LABEL and msg.get_type()==PMessage.T_ROBOT_MOVE):
-            # update internally
-            self._robot_ref.execute_command(msg.get_msg())
-            if (self._robot_ref.get_position()==self._map_ref.get_end_zone_center_pos()):
-                self.transit_state(EndState)
-            return [],[PMessage(type=PMessage.T_ROBOT_MOVE,msg=msg.get_msg())]
+        return [],[]
+
+class FastRunStateUsingExploration(FastRunState):
+    """
+    Use exploration strategy to run fast run
+    `_explore_algo`: ExplorationAlgo object
+    """
+
+    def set_start(self):
+        self.started = True
+        # if the robot is not in correct orientation (cannot face WEST), correct it
+        if (self._robot_ref.get_orientation()==WEST):
+            correction_command = PMessage.M_TURN_LEFT
+            self._machine.send_command(correction_command)
+            self.add_expected_ack(label=ARDUINO_LABEL,msg=PMessage(type=PMessage.T_ROBOT_MOVE,msg=correction_command),call_back=self.continue_sending_command,args=[correction_command])
         else:
-            return [],[]
+            self.continue_sending_command()
+
+    def continue_sending_command(self,move=None):
+        if (hasattr(self,"_explore_algo") and move):
+            # receive ack
+            self._robot_ref.execute_command(move)
+            # update android
+            self.send_robot_update(move)
+            # if still have commands, send
+            if (self._robot_ref.get_position()!=self._map_ref.get_end_zone_center_pos()):
+                new_move = self._explore_algo.get_next_move()
+                self._machine.send_command(new_move)
+                self.add_expected_ack(label=ARDUINO_LABEL,msg=PMessage(type=PMessage.T_ROBOT_MOVE,msg=new_move),call_back=self.continue_sending_command,args=[new_move])
+            else:# end of fast run
+                self.transit_state(EndState(machine=self._machine))
+        else:
+            # init algo
+            self._explore_algo = MazeExploreAlgo(robot=self._robot_ref,map_ref=self._map_ref)
+            new_move = self._explore_algo.get_next_move()
+            self._machine.send_command(new_move)
+            self.add_expected_ack(label=ARDUINO_LABEL,msg=PMessage(type=PMessage.T_ROBOT_MOVE,msg=new_move),call_back=self.continue_sending_command,args=[new_move])
 
 class EndState(BaseState):
     """

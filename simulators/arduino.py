@@ -79,6 +79,8 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
         self._mf_btn.grid(row=0,column=5)
         self._sp_btn = Button(master=fr,text="path",command=self.show_path)
         self._sp_btn.grid(row=0,column=6)
+        self._sr_btn = Button(master=fr,text="send reading",command=self._controller.send_sensor_data)
+        self._sr_btn.grid(row=0,column=7)
 
     #TODO: this is for debugging purpose only
     def show_path(self):

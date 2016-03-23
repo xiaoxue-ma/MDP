@@ -1,5 +1,6 @@
 import os
 import math
+import re
 from Tkinter import *
 from abc import ABCMeta,abstractmethod
 from bitarray import bitarray
