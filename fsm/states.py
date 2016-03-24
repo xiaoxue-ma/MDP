@@ -436,6 +436,7 @@ class FastRunStateUsingExploration(FastRunState):
     Use exploration strategy to run fast run
     `_explore_algo`: ExplorationAlgo object
     """
+    _SEND_CALLIBRATION = True
 
     def set_start(self):
         self.started = True
@@ -456,6 +457,8 @@ class FastRunStateUsingExploration(FastRunState):
             # if still have commands, send
             if (self._robot_ref.get_position()!=self._map_ref.get_end_zone_center_pos()):
                 new_move = self._explore_algo.get_next_move()
+                if (self._SEND_CALLIBRATION):
+                    self.send_callibration_msg()
                 self._machine.send_command(new_move)
                 self.add_expected_ack(label=ARDUINO_LABEL,msg=PMessage(type=PMessage.T_ROBOT_MOVE,msg=new_move),call_back=self.continue_sending_command,args=[new_move])
             else:# end of fast run
@@ -466,6 +469,36 @@ class FastRunStateUsingExploration(FastRunState):
             new_move = self._explore_algo.get_next_move()
             self._machine.send_command(new_move)
             self.add_expected_ack(label=ARDUINO_LABEL,msg=PMessage(type=PMessage.T_ROBOT_MOVE,msg=new_move),call_back=self.continue_sending_command,args=[new_move])
+
+    def send_callibration_msg(self):
+        blocked_sides = self._robot_ref.get_sides_fully_blocked(self._map_ref)
+        if (blocked_sides):
+            callibration_msgs_to_send = self.get_callibration_msgs(blocked_sides)
+        else:
+            callibration_msgs_to_send=[]
+        for msg in callibration_msgs_to_send:
+            self._machine.send_cmd_pmsg(msg)
+
+    def get_callibration_msgs(self,sides):
+        "return a list of PMessage"
+        if (len(sides)==1 and sides[0]==RIGHT and self._robot_ref.has_continuous_straight_moves(3)):
+            # if right side fully blocked, send callibration if there's at least 3 straight moves
+            debug("more than 3 straight moves in a row",DEBUG_STATES)
+            self._robot_ref.clear_history()
+            return [PMessage(type=PMessage.T_CALLIBRATE,msg=PMessage.M_CALLIBRATE_RIGHT)]
+        elif(len(sides)==1 and sides[0]==FRONT):
+            # if front side fully blocked, callibrate
+            return [PMessage(type=PMessage.T_CALLIBRATE,msg=PMessage.M_CALLIBRATE_FRONT)]
+        elif (len(sides)>1):
+            # if at corner, callibrate
+            ORI_TO_MSG = {
+                FRONT:PMessage.M_CALLIBRATE_FRONT,
+                LEFT:PMessage.M_CALLIBRATE_LEFT,
+                RIGHT: PMessage.M_CALLIBRATE_RIGHT
+            }
+            return [PMessage(type=PMessage.T_CALLIBRATE,msg=ORI_TO_MSG[s]) for s in sides]
+        else:
+            return []
 
 class EndState(BaseState):
     """

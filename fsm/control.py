@@ -65,10 +65,16 @@ class CentralController(StateMachine):
         for q in self._data_out_qs:
             self._enqueue_list(q,[pmsg])
 
+    def send_cmd_pmsg(self,pmsg):
+        self._enqueue_list(self._cmd_out_q,[pmsg])
+
     # allow delay is deprecated
     def _enqueue_list(self,q,list,allow_delay=False):
         "enqueue list items on another thread"
-        start_new_thread(self._enqueue_list_internal,(q,list,allow_delay,))
+        # start_new_thread(self._enqueue_list_internal,(q,list,allow_delay,))
+        for item in list:
+            if (item):
+                q.put_nowait(item)
 
     def _enqueue_list_internal(self,q,list,allow_delay=False):
         "thread task"

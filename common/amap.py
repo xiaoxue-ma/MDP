@@ -15,6 +15,11 @@ class MapSetting():
     DEFAULT_MAP_SIZE_Y = 20
     DEFAULT_START_POS = (1,18)
     DEFAULT_END_POS = (13,1)
+    #
+    # DEFAULT_MAP_SIZE_X = 10
+    # DEFAULT_MAP_SIZE_Y = 15
+    # DEFAULT_START_POS = (1,13)
+    # DEFAULT_END_POS = (8,1)
 
     # possible values of the each cell
     CLEAR = 0
