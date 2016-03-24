@@ -24,58 +24,62 @@ TO_SER = dict({PMessage.M_MOVE_FORWARD: "0", PMessage.M_TURN_RIGHT: "1", PMessag
 FROM_SER = {value:key for key,value in TO_SER.items()}
 current_milli_time = lambda: int(round(time.time() * 1000))
 
+
 class ArduinoInterface(Interface):
     name = ARDUINO_LABEL
-    _write_delay = 1
+    _write_delay = 0.7
 
     def __init__(self):
         super(ArduinoInterface,self).__init__()
         self.status = False
+        self.port_no = 1
 
     def connect(self):
-        connected = False
-        while(not connected):
-            try:
-                debug("Trying to connect to arduino...",DEBUG_INTERFACE)
-                self.ser = serial.Serial(SER_PORT, SER_BAUD, timeout=3)
-                time.sleep(2)
-                if self.ser is not None:
-                    self.set_ready()
-                    debug("SER--Connected to Arduino!",DEBUG_INTERFACE)
-                    connected = True
-            except Exception, e:
-                debug("SER--connection exception: %s" % str(e),DEBUG_INTERFACE)
+        if self.ser is not None:
+            self.ser.close()
+            time.sleep(2)
+        try:
+            self.port_no ^= 1
+            self.ser = serial.Serial(SER_PORT+str(self.port_no), SER_BAUD)
+            time.sleep(2)
+            if self.ser is not None:
+                self.set_ready()
+                self.status = True
+                debug("SER--Connected to Arduino!",DEBUG_INTERFACE)
+        except Exception, e:
+            debug("SER--connection exception: %s" % str(e),DEBUG_INTERFACE)
+            self.reconnect()
 
     def disconnect(self):
-        if self.ser.is_open:
+        if self.ser is not None:
             self.ser.close()
             self.set_not_ready()
             debug("SER--Disconnected to Arduino!",DEBUG_INTERFACE)
 
+    def reconnect(self):
+        self.disconnect()
+        time.sleep(2)
+        self.connect()
 
     def read(self):
         try:
-            if self.ser.inWaiting():
-                try:
-                    msg = self.ser.readline()
-                    if msg != "":
-                        debug(str(current_milli_time()) + "SER--Read from Arduino: %s" % str(msg), DEBUG_INTERFACE)
-                        if len(msg) > 5:
-                            if msg[0] != 'T':
-                                realmsg = PMessage(type=PMessage.T_MAP_UPDATE, msg=msg)
-                                return realmsg
-                        else:
-                            msg = msg[0]
-                            if msg < '4':
-                                realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=FROM_SER.get(msg[0]))
-                                return realmsg
-                except ValidationException as e:
-                    debug(str(current_milli_time()) + "validation exception: {}".format(e.message),DEBUG_VALIDATION)
-                except Exception, e:
-                    debug(str(current_milli_time()) + "SER--read exception: %s" % str(e),DEBUG_INTERFACE)
-                    self.reconnect()
-        except Exception as e:
-            debug("SER-read exception:{}".format(e),DEBUG_INTERFACE)
+            msg = self.ser.readline()
+            if msg != "":
+                debug(str(current_milli_time()) + "SER--Read from Arduino: %s" % str(msg), DEBUG_INTERFACE)
+                if len(msg) > 5:
+                    if msg[0] != 'T':
+                        realmsg = PMessage(type=PMessage.T_MAP_UPDATE, msg=msg)
+                        return realmsg
+                else:
+                    msg = msg[0]
+                    if msg < '6':
+                        realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=FROM_SER.get(msg[0]))
+                        return realmsg
+        except ValidationException as e:
+            debug(str(current_milli_time()) + "validation exception: {}".format(e.message),DEBUG_VALIDATION)
+        except Exception, e:
+            debug(str(current_milli_time()) + "SER--read exception: %s" % str(e),DEBUG_INTERFACE)
+            self.reconnect()
 
     def write(self, msg):
         try:
@@ -127,7 +131,6 @@ class AndroidInterface(Interface):
         except Exception, e:
             debug("BT--disconnection exception: %s" % str(e),DEBUG_INTERFACE)
 
-
     def read(self):
         if (not self._msg_buffer.is_empty()):
             return self._msg_buffer.dequeue()
@@ -143,8 +146,6 @@ class AndroidInterface(Interface):
             debug("Validation exception: {}".format(e.message),DEBUG_VALIDATION)
         except Exception, e:
             debug("BT--read exception: %s" % str(e),DEBUG_INTERFACE)
-            self.reconnect()
-
 
     def write(self, msg):
         try:
