@@ -1,11 +1,9 @@
-from interfaces.mock import MockAndroidInterface
+from cache import Cache_Rpi
 
-def main():
-    interface = MockAndroidInterface()
-    interface.connect()
-    while(True):
-        data = interface.read()
-        if (data):
-            print("received: " + str(data))
+q = Cache_Rpi()
 
-main()
+q.enqueue("1")
+print q.is_empty()
+print q.dequeue()
+
+print q.is_empty()
