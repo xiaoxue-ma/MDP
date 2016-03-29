@@ -104,7 +104,8 @@ class MoveCommandMiddleware(AckMiddleware):
     def move_ack_call_back(self,move):
         self._robot_ref.execute_command(move)
         self._map_ref.set_fixed_cells(self._robot_ref.get_occupied_postions(),MapSetting.CLEAR)
-        return [],[PMessage(type=PMessage.T_ROBOT_MOVE,msg=move)]
+        #return [],[PMessage(type=PMessage.T_ROBOT_MOVE,msg=move)]
+        return [],[]
 
 class MapUpdateMiddleware(BaseMiddleware):
     """
@@ -131,7 +132,8 @@ class MapUpdateMiddleware(BaseMiddleware):
         map_update_to_send = [clear_pos_list,obstacle_pos_list] if self.map_update_sent_in_list else ",".join([str(i) for i in sensor_values])
         if (self._SAVE_MAP_TRACE):
             self.save_map_trace()
-        return [],[PMessage(type=PMessage.T_MAP_UPDATE,msg=map_update_to_send)]
+        return [],[]
+        # return [],[PMessage(type=PMessage.T_MAP_UPDATE,msg=map_update_to_send)]
 
     def update_map(self,sensor_values):
         "update the map_ref according to received sensor readings"
@@ -174,13 +176,15 @@ class MapUpdateMiddleware(BaseMiddleware):
 class MapUpdateMiddlewareUsingMapBuffer(MapUpdateMiddleware):
     """
     To use this, map_ref must be a MapRefWithBuffer object
+    For every map update, a list of positions will be sent
     """
     def process_input(self,label,msg):
         cmd_ls,data_ls = super(MapUpdateMiddlewareUsingMapBuffer,self).process_input(label,msg)
         if (hasattr(self._map_ref,"retrieve_updated_cells")):
             cells = self._map_ref.retrieve_updated_cells()
             if (cells):
-                return [],[PMessage(type=PMessage.T_UPDATE_MAP_STATUS,msg="|".join(["{},{},{}".format(x,y,o) for x,y,o in cells]))]
+                return [],[]
+                # return [],[PMessage(type=PMessage.T_UPDATE_MAP_STATUS,msg="|".join(["{},{},{}".format(x,y,o) for x,y,o in cells]))]
             else:
                 return [],[]
         else:

@@ -12,7 +12,8 @@ class BasePublisher():
         for listener in self._listeners:
             try:
                 listener.update(data)
-            except:
+            except Exception as e:
+                print ("Exception in update:{}".format(e))
                 pass
 
     def add_change_listener(self,listener):
@@ -22,6 +23,9 @@ class BasePublisher():
 class BaseObserver(object):
 
     __metaclass__ = ABCMeta
+
+    def __init__(self,*args,**kwargs):
+        pass
 
     @abstractmethod
     def update(self,data=None):

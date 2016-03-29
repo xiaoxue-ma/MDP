@@ -93,7 +93,7 @@ class ArduinoSimulationApp(BaseObserver,AppSettings):
         for y in range(len(nodes)):
             for x in range(len(nodes[0])):
                 if (nodes[y][x]):
-                    f = nodes[y][x].get_g()
+                    f = nodes[y][x].get_f()
                     self._map_ui.paint_text(x,y,"{}".format(f))
         # paint trace
         cur_node = nodes[1][13]

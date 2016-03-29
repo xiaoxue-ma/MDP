@@ -196,16 +196,17 @@ class ExplorationFirstRoundState(BaseState):
             debug("Ending Exploration",DEBUG_STATES)
             self.trigger_end_exploration()
 
-        if (self._USE_ROBOT_STATUS_UPDATE):
-            data_ls = [PMessage(type=PMessage.T_UPDATE_ROBOT_STATUS,msg="{},{},{}".format(
-            self._robot_ref.get_position()[0],
-            self._robot_ref.get_position()[1],
-            self._robot_ref.get_orientation().get_value()
-        ))]
-        else:
-            data_ls = [PMessage(type=PMessage.T_ROBOT_MOVE,msg=move)]
-
-        return [],data_ls
+        # if (self._USE_ROBOT_STATUS_UPDATE):
+        #     data_ls = [PMessage(type=PMessage.T_UPDATE_ROBOT_STATUS,msg="{},{},{}".format(
+        #     self._robot_ref.get_position()[0],
+        #     self._robot_ref.get_position()[1],
+        #     self._robot_ref.get_orientation().get_value()
+        # ))]
+        # else:
+        #     data_ls = [PMessage(type=PMessage.T_ROBOT_MOVE,msg=move)]
+        #
+        # return [],data_ls
+        return [],[]
 
     def trigger_end_exploration(self):
         self._explore_end = True
@@ -412,15 +413,16 @@ class FastRunState(BaseState):
             self.transit_state(EndState(machine=self._machine))
 
     def send_robot_update(self,move):
-        if (self._USE_ROBOT_STATUS_UPDATE):
-            msg = PMessage(type=PMessage.T_UPDATE_ROBOT_STATUS,msg="{},{},{}".format(
-            self._robot_ref.get_position()[0],
-            self._robot_ref.get_position()[1],
-            self._robot_ref.get_orientation().get_value()
-        ))
-        else:
-            msg = [PMessage(type=PMessage.T_ROBOT_MOVE,msg=move)]
-        self._machine.send_data_pmsg(msg)
+        pass
+        # if (self._USE_ROBOT_STATUS_UPDATE):
+        #     msg = PMessage(type=PMessage.T_UPDATE_ROBOT_STATUS,msg="{},{},{}".format(
+        #     self._robot_ref.get_position()[0],
+        #     self._robot_ref.get_position()[1],
+        #     self._robot_ref.get_orientation().get_value()
+        # ))
+        # else:
+        #     msg = [PMessage(type=PMessage.T_ROBOT_MOVE,msg=move)]
+        # self._machine.send_data_pmsg(msg)
 
     def get_commands_for_fastrun(self):
         "return a list of command PMessage"

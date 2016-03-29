@@ -313,8 +313,12 @@ class MapRef(BitMapIOMixin,MapSetting,BasePublisher):
         return [(x+i,y+j) for i in range(-1,2) for j in range(-1,2)]
 
     def notify(self,data=None):
-        debug("Map updated",DEBUG_COMMON)
-        super(MapRef,self).notify(data=data)
+        if (data!=None):
+            super(MapRef,self).notify(data=data)
+        else:
+            super(MapRef,self).notify(data=[(x,y)
+                                            for x in range(self.size_x) for y in range(self.size_y)])
+
 
 
 class MapRefWithBuffer(MapRef):

@@ -67,7 +67,7 @@ def main(use_mock_arduino=False):
     thread.start_new_thread(read_from_interface, (to_control, arduino_interface,ARDUINO_LABEL))
     thread.start_new_thread(read_from_interface, (to_control, android_interface,ANDROID_LABEL))
     thread.start_new_thread(read_from_interface, (to_control, pc_interface,PC_LABEL))
-    controller = CentralController(input_q=to_control, cmd_out_q=to_arduino, data_out_qs=[to_pc, to_android])
+    controller = CentralController.get_instance(input_q=to_control, cmd_out_q=to_arduino, data_out_qs=[to_pc, to_android])
     controller.control_task()
 
 use_mock_arduino = raw_input("use mock arduino?[y/n]")

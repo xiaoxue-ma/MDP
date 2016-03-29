@@ -2,7 +2,8 @@ import time
 from thread import start_new_thread
 
 from common.robot import RobotRef,RobotRefWithMemory
-from common.amap import MapRefWithBuffer,MapRef
+from common.amap import MapRefWithBuffer,MapRef,MapSetting
+from common.popattern import BaseObserver
 from common.timer import timed_call
 from common.debug import debug,DEBUG_STATES
 from fsm.states import ReadyState
@@ -12,16 +13,26 @@ from algorithms.shortest_path import *
 
 class CentralController(StateMachine):
     """
+    This is a Singleton class
     run control_task method to start running the controller
     """
 
     _input_q = None # input queue
     _cmd_out_q = None
     _data_out_qs = None # list of queue
+    _instance = None
+
+    @staticmethod
+    def get_instance(*args,**kwargs):
+        if (not CentralController._instance):
+            CentralController._instance = CentralController(*args,**kwargs)
+        return CentralController._instance
 
     def control_task(self):
         "central control"
-        # init robot
+        #TODO: init listeners
+        self._map_listener = MapUpdateListener(map_ref=self._map_ref)
+        self._robot_listener = RobotUpdateListener(robot_ref=self._robot_ref)
         while True:
             if (not self._input_q.empty()):
                 input_tuple = self._input_q.get_nowait()
@@ -45,10 +56,10 @@ class CentralController(StateMachine):
         self._robot_ref = RobotRefWithMemory()
         self._state = ReadyState(machine=self)
 
-    def __init__(self,input_q,cmd_out_q,data_out_qs):
-        self._input_q = input_q
-        self._cmd_out_q = cmd_out_q
-        self._data_out_qs = data_out_qs
+    def __init__(self,*args,**kwargs):
+        self._input_q = kwargs.get("input_q")
+        self._cmd_out_q = kwargs.get("cmd_out_q")
+        self._data_out_qs = kwargs.get("data_out_qs")
         self.reset()
 
     def update(self):
@@ -76,8 +87,48 @@ class CentralController(StateMachine):
             if (item):
                 q.put_nowait(item)
 
-    def _enqueue_list_internal(self,q,list,allow_delay=False):
-        "thread task"
-        for item in list:
-            if (item):
-                q.put_nowait(item)
+
+class MapUpdateListener(BaseObserver):
+    """
+    `_map_ref`
+    `_controller`
+    """
+
+    def __init__(self,*args,**kwargs):
+        super(MapUpdateListener,self).__init__(*args,**kwargs)
+        map_ref = kwargs.get("map_ref")
+        map_ref.add_change_listener(self)
+        self._map_ref = map_ref
+        self._controller = CentralController.get_instance()
+
+    def update(self,data=None):
+        cleaned_data=[(x,y) for x,y in data if not self._map_ref.is_out_of_arena(x,y)]
+        if (cleaned_data):
+            self._controller.send_data_pmsg(PMessage(type=PMessage.T_UPDATE_MAP_STATUS,
+                            msg="|".join(["{},{},{}".format(x,y,self.format_cell_value(x,y))
+                                          for x,y in cleaned_data])))
+
+    def format_cell_value(self,x,y):
+        if (self._map_ref.get_cell(x,y)==MapSetting.OBSTACLE):
+            return 1
+        else:
+            return 0
+
+class RobotUpdateListener(BaseObserver):
+    """
+    `_robot_ref`
+    `_controller`
+    """
+
+    def __init__(self,*args,**kwargs):
+        super(RobotUpdateListener,self).__init__(*args,**kwargs)
+        robot_ref = kwargs.get("robot_ref")
+        robot_ref.add_change_listener(self)
+        self._robot_ref = robot_ref
+        self._controller = CentralController.get_instance()
+
+    def update(self,data=None):
+        x,y = self._robot_ref.get_position()
+        o = self._robot_ref.get_orientation().get_value()
+        self._controller.send_data_pmsg(PMessage(type=PMessage.T_UPDATE_ROBOT_STATUS,
+                            msg="{},{},{}".format(x,y,o)))
