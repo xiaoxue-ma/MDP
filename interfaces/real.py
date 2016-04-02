@@ -75,7 +75,6 @@ class ArduinoInterface(Interface):
                     realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=msg)
                     return realmsg
 
-
         except ValidationException as e:
             debug(str(current_milli_time()) + "validation exception: {}".format(e.message),DEBUG_VALIDATION)
         except Exception, e:
