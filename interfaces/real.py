@@ -11,16 +11,9 @@ from common.pmessage import PMessage,ValidationException
 from common.debug import debug,DEBUG_INTERFACE,DEBUG_VALIDATION
 from interfaces.config import *
 
-# TO_SER = dict({PMessage.M_MOVE_FORWARD: "0", PMessage.M_TURN_RIGHT: "1", PMessage.M_TURN_LEFT: "2",
-#                PMessage.M_TURN_BACK: "3", PMessage.M_START_EXPLORE: "4", PMessage.M_END_EXPLORE: "5",
-#                PMessage.M_START_FASTRUN: "6", })
 TO_SER = dict({PMessage.M_MOVE_FORWARD: "0", PMessage.M_TURN_RIGHT: "1", PMessage.M_TURN_LEFT: "2",
                PMessage.M_TURN_BACK: "3", PMessage.M_START_EXPLORE: "4", PMessage.M_START_FASTRUN: "5",
                PMessage.M_CALLIBRATE_FRONT: "i", PMessage.M_CALLIBRATE_RIGHT:"o",PMessage.M_END_EXPLORE:"8"})
-#
-# FROM_SER = dict({"0": PMessage.M_MOVE_FORWARD, "1": PMessage.M_TURN_RIGHT, "2": PMessage.M_TURN_LEFT,
-#                  "3": PMessage.M_TURN_BACK, "4": PMessage.M_START_EXPLORE, "5": PMessage.M_END_EXPLORE,
-#                  "6": PMessage.M_START_FASTRUN, })
 
 FROM_SER = {value:key for key,value in TO_SER.items()}
 current_milli_time = lambda: int(round(time.time() * 1000))
@@ -69,15 +62,20 @@ class ArduinoInterface(Interface):
             msg = self.ser.readline()
             if msg != "":
                 debug(str(current_milli_time()) + "SER--Read from Arduino: %s" % str(msg), DEBUG_INTERFACE)
-                if len(msg) > 5:
-                    if msg[0] != 'T':
-                        realmsg = PMessage(type=PMessage.T_MAP_UPDATE, msg=msg)
-                        return realmsg
-                else:
-                    msg = msg[0]
-                    if msg <= '8':
+                if msg[0] != 'T' and len(msg.split(',')) == 6:
+                    realmsg = PMessage(type=PMessage.T_MAP_UPDATE, msg=msg)
+                    return realmsg
+                elif msg[0] != 'T' and msg in FROM_SER:
+                    if msg[0] <= '8':
                         realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=FROM_SER.get(msg[0]))
                         return realmsg
+                elif msg[0] != 'T':
+                    msg = msg.split(',')
+                    msg = FROM_SER.get(msg[0]) + "*" + msg[1]
+                    realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=msg)
+                    return realmsg
+
+
         except ValidationException as e:
             debug(str(current_milli_time()) + "validation exception: {}".format(e.message),DEBUG_VALIDATION)
         except Exception, e:
@@ -86,9 +84,15 @@ class ArduinoInterface(Interface):
 
     def write(self, msg):
         try:
-            realmsg = TO_SER.get(msg.get_msg())
+            msg = msg.get_msg()
+            realmsg = ""
+            if msg in TO_SER:
+                realmsg = TO_SER.get(msg)
+            elif len(msg.split('*')) == 2:
+                msg = msg.split('*')
+                realmsg = TO_SER.get(msg[0]) + "," + msg[1]
             if realmsg:
-		self.ser.write(realmsg)
+                self.ser.write(realmsg)
                 if realmsg == 'i' or realmsg == 'o':
                     time.sleep(self._calib_delay - self._write_delay)
                 time.sleep(self._write_delay)
@@ -101,7 +105,7 @@ class ArduinoInterface(Interface):
 class AndroidInterface(Interface):
 
     name = ANDROID_LABEL
-    _write_delay = 1
+    _write_delay = 0.1
 
     def __init__(self):
         super(AndroidInterface,self).__init__()
