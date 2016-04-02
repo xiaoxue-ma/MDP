@@ -95,7 +95,7 @@ class MoveCommandMiddleware(AckMiddleware):
         if (cmd_ls or data_ls):
             return cmd_ls,data_ls
         # process command
-        elif (msg.get_type()==PMessage.T_COMMAND and msg.get_msg() in PMessage.M_MOVE_INSTRUCTIONS and label in CMD_SOURCES):
+        elif (msg.get_type()==PMessage.T_COMMAND and msg.get_msg() in PMessage.get_valid_move_commands() and label in CMD_SOURCES):
             # send command to arduino, wait till ack and then send update to android
             self.add_expected_ack(label=ARDUINO_LABEL,msg=PMessage(type=PMessage.T_ROBOT_MOVE,msg=msg.get_msg()),call_back=self.move_ack_call_back,args=[msg.get_msg()])
             return [msg],[]

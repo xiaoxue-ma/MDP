@@ -39,6 +39,17 @@ class PMessage():
     M_CALLIBRATE_LEFT = "cleft"
     M_CALLIBRATE_RIGHT = "cright"
 
+    @staticmethod
+    def get_valid_cmd_msgs():
+        mf_msgs = ["mf*{}".format(i) for i in range(1,21)]
+        return mf_msgs + PMessage.M_VALID_COMMAND_MSGS
+
+    @staticmethod
+    def get_valid_move_commands():
+        mf_msgs = ["mf*{}".format(i) for i in range(1,21)]
+        return mf_msgs + PMessage.M_MOVE_INSTRUCTIONS
+
+
     def render_msg(self):
         "return message formatted in JSON"
         return json.dumps({"type":self._type,"msg":self._msg})
@@ -87,11 +98,13 @@ class PMessage():
 
     @staticmethod
     def validate(type,msg):
+        # only validate messages read in from android or arduino
         if (type==PMessage.T_COMMAND):
-            if (msg not in PMessage.M_VALID_COMMAND_MSGS):
+            if (msg not in PMessage.get_valid_cmd_msgs()):
                 raise ValidationException("{} is not a valid command".format(msg))
         elif(type==PMessage.T_ROBOT_MOVE):
-            if (msg not in PMessage.M_MOVE_INSTRUCTIONS and msg!=PMessage.M_START_FASTRUN):
+            if (msg not in PMessage.get_valid_move_commands()
+                and msg!=PMessage.M_START_FASTRUN):
                 raise ValidationException("{} is not a valid robot move".format(msg))
         elif(type==PMessage.T_STATE_CHANGE):
             return

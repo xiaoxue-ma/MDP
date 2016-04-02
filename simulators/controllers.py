@@ -126,7 +126,7 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
                 instruction = self.decode_instruction(msg_obj)
                 if (instruction):
                     self.execute_instruction(instruction)
-                    if (self._sending_move_ack and instruction in [PMessage.M_TURN_BACK,PMessage.M_TURN_RIGHT,PMessage.M_TURN_LEFT,PMessage.M_MOVE_FORWARD]):
+                    if (self._sending_move_ack and instruction in PMessage.get_valid_cmd_msgs()):
                         self.send_data(type=PMessage.T_ROBOT_MOVE,data=instruction)
                     if (self._sending_sensor_data):
                         self.send_sensor_data()
@@ -161,6 +161,16 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
             self._sending_move_ack=True
 
         elif(instruct==PMessage.M_RESET):self.reset()
+        elif(instruct.find(PMessage.M_MOVE_FORWARD)!=-1):
+            self._map_ref.refresh()
+            try:
+                _,grid = instruct.split("*")
+                print("move forward by {} grids".format(int(grid)))
+                for i in range(int(grid)):
+                    self._robot.move_forward()
+                    time.sleep(0.2)
+            except Exception as e:
+                print ("Exception in multi-move forward:{}".format(e))
         # simulate the delay in real execution
         time.sleep(self.EXECUTION_DELAY)
 

@@ -58,9 +58,9 @@ class RobotRef(RobotSettings,BasePublisher):
     def turn_back(self):
         self.set_orientation(self._ori.to_back())
 
-    def move_forward(self):
+    def move_forward(self,num_grids=1):
         pos_change = self._ori.to_pos_change()
-        self.set_position((self._pos[0]+pos_change[0],self._pos[1]+pos_change[1]))
+        self.set_position((self._pos[0]+pos_change[0]*num_grids,self._pos[1]+pos_change[1]*num_grids))
 
     def shift_right(self):
         "shift the robot position to its right, should only be used to do position correction"
@@ -73,6 +73,9 @@ class RobotRef(RobotSettings,BasePublisher):
         elif (command==PMessage.M_TURN_LEFT): self.turn_left()
         elif(command==PMessage.M_MOVE_FORWARD): self.move_forward()
         elif(command==PMessage.M_TURN_BACK): self.turn_back()
+        elif(command.find(PMessage.M_MOVE_FORWARD)!=-1):
+            _,grid = command.split("*")
+            self.move_forward(num_grids=int(grid))
         else:debug("Command {} is not a valid command for robot".format(command),DEBUG_COMMON)
 
     def get_sides_fully_blocked(self,map_ref):

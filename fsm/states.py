@@ -368,7 +368,7 @@ class ExplorationDoneState(BaseState):
         type,msg = label,msg
         if (type in CMD_SOURCES and msg.get_msg()==PMessage.M_START_FASTRUN):
             # get the fast run commands
-            self.transit_state(FastRunStateUsingExploration)
+            self.transit_state(FastRunState)
             return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_START_FASTRUN)],[]
         return [],[]
 
@@ -380,6 +380,7 @@ class FastRunState(BaseState):
     `started`: boolean
     """
     _USE_ROBOT_STATUS_UPDATE = True
+    _USE_MULTI_GRID_MOVE_FORWARD = True
 
     def __str__(self):
         return "run"
@@ -428,7 +429,28 @@ class FastRunState(BaseState):
         "return a list of command PMessage"
         algo = AStarShortestPathAlgo(map_ref=self._map_ref,target_pos=self._map_ref.get_end_zone_center_pos())
         cmd_list = algo.get_shortest_path(robot_pos=self._robot_ref.get_position(),robot_ori=self._robot_ref.get_orientation())
-        return cmd_list
+        if (self._USE_MULTI_GRID_MOVE_FORWARD):
+            return self.combine_move_forawrd(cmd_list)
+        else:
+            return cmd_list
+
+    def combine_move_forawrd(self,ls):
+        "combine the mf messages into mf*<num>"
+        result_ls = []
+        accumlation = 0
+        for i in range(len(ls)):
+            if (ls[i]==PMessage.M_MOVE_FORWARD):
+                accumlation += 1
+            else:
+                if (accumlation>0):
+                    result_ls.append("{}*{}".format(PMessage.M_MOVE_FORWARD,accumlation)
+                                     if accumlation>1 else PMessage.M_MOVE_FORWARD)
+                result_ls.append(ls[i])
+                accumlation = 0
+        if (accumlation>0):
+            result_ls.append("{}*{}".format(PMessage.M_MOVE_FORWARD,accumlation)
+                                     if accumlation>1 else PMessage.M_MOVE_FORWARD)
+        return result_ls
 
     def post_process(self,label,msg):
         return [],[]

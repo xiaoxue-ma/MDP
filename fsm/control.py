@@ -70,7 +70,7 @@ class CentralController(StateMachine):
             pmsg = PMessage(type=PMessage.T_COMMAND,msg=msg)
             self._enqueue_list(self._cmd_out_q,[pmsg])
         except Exception,e:
-            pass
+            print("Exception in sending command:{}".format(e))
 
     def send_data_pmsg(self,pmsg):
         for q in self._data_out_qs:
