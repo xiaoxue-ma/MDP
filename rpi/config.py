@@ -1,7 +1,9 @@
-WIFI_HOST = "192.168.1.1"
+WIFI_HOST = "localhost"
 WIFI_PORT = 50001
+
+# for real communication
 SER_BAUD = 115200
-SER_PORT = "/dev/ttyACM0"
-N7_MAC = "50:46:5D:84:91:20"
+SER_PORT = "/dev/ttyACM"
+N7_MAC = "08:60:6E:A5:A5:86"
 BT_UUID = "00001101-0000-1000-8000-00805F9B34FB"
 BT_PORT = 4

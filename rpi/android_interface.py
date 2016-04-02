@@ -1,11 +1,14 @@
-__author__ = 'Boss'
+import time
 from bluetooth import *
 from config import *
+from message import *
+
 
 class AndroidInterface(object):
+    _write_delay = 0.05
+
     def __init__(self):
         self.status = False
-        self.name = "android"
 
     def connect(self):
         try:
@@ -19,18 +22,15 @@ class AndroidInterface(object):
                               profiles=[SERIAL_PORT_PROFILE],
                               )
             self.client_sock, client_info = self.server_sock.accept()
-
-            if client_info[0] != N7_MAC:
-                print "BT--Unauthorized device, disconnecting..."
-                return
-
             print("BT--Connected to %s on channel %s" % (str(client_info), str(port)))
             self.status = True
+            return True
 
         except Exception, e:
             print "BT--connection exception: %s" % str(e)
             self.status = False
             self.reconnect()
+            return False
 
     def disconnect(self):
         try:
@@ -45,21 +45,27 @@ class AndroidInterface(object):
         if not self.status:
             print "BT--reconnecting..."
             self.disconnect()
+            time.sleep(2)
             self.connect()
 
     def read(self):
         try:
-            msg = self.client_sock.recv(1024)
+            msg = self.client_sock.recv(2048)
             print "BT--Read from Android: %s" % str(msg)
-            return msg
+            msg = json.loads(msg)
+            msg = msg.get("msg")
+            print "BT--After conversion %s" % str(msg)
+            return android_to_algo(msg)
         except Exception, e:
             print "BT--read exception: %s" % str(e)
             self.reconnect()
 
     def write(self, msg):
         try:
-            self.client_sock.send(msg)
             print "BT--Write to Android: %s" % str(msg)
+            msg = algo_to_android(msg)
+            print "BT--After conversion: %s" % str(msg)
+            self.client_sock.send(msg)
         except Exception, e:
             print "BT--write exception: %s" % str(e)
             self.reconnect()
