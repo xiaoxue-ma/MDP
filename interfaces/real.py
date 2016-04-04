@@ -59,7 +59,7 @@ class ArduinoInterface(Interface):
 
     def read(self):
         try:
-            msg = self.ser.readline()
+            msg = self.ser.readline().rstrip()
             if msg != "":
                 debug(str(current_milli_time()) + "SER--Read from Arduino: %s" % str(msg), DEBUG_INTERFACE)
                 if msg[0] != 'T' and len(msg.split(',')) == 6:
@@ -69,7 +69,7 @@ class ArduinoInterface(Interface):
                     if msg[0] <= '8':
                         realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=FROM_SER.get(msg[0]))
                         return realmsg
-                elif msg[0] != 'T':
+                elif msg[0] != 'T' and len(msg) > 1:
                     msg = FROM_SER.get(msg[0]) + "*" + msg[1:]
                     realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=msg)
                     return realmsg

@@ -246,8 +246,10 @@ class RobotUI(RobotSettings,BaseObserver):
         for x,y in body_pos_ls:
             if ((x,y)==head_pos):
                 self._cells[y][x].config(bg=self.HEAD_COLOR)
+                self._cells[y][x].config(highlightbackground=self.HEAD_COLOR)
             else:
                 self._cells[y][x].config(bg=self.BODY_COLOR)
+                self._cells[y][x].config(highlightbackground=self.BODY_COLOR)
 
     def update(self,data=None):
         self.paint_robot()
@@ -271,6 +273,7 @@ class RobotUIWithTracing(RobotUI):
     def paint_robot_trace(self):
         for x,y in self._traced_pos:
             self._cells[y][x].config(bg=self.TRACE_COLOR)
+            self._cells[y][x].config(highlightbackground=self.TRACE_COLOR)
 
     def start_tracing(self):
         self._traced_pos = []
