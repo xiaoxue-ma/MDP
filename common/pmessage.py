@@ -99,6 +99,7 @@ class PMessage():
     @staticmethod
     def validate(type,msg):
         # only validate messages read in from android or arduino
+        msg = msg.strip()
         if (type==PMessage.T_COMMAND):
             if (msg not in PMessage.get_valid_cmd_msgs()):
                 raise ValidationException("{} is not a valid command".format(msg))
