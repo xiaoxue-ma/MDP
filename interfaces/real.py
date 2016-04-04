@@ -70,8 +70,7 @@ class ArduinoInterface(Interface):
                         realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=FROM_SER.get(msg[0]))
                         return realmsg
                 elif msg[0] != 'T':
-                    msg = msg.split(',')
-                    msg = FROM_SER.get(msg[0]) + "*" + msg[1]
+                    msg = FROM_SER.get(msg[0]) + "*" + msg[1:]
                     realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=msg)
                     return realmsg
 
@@ -89,7 +88,7 @@ class ArduinoInterface(Interface):
                 realmsg = TO_SER.get(msg)
             elif len(msg.split('*')) == 2:
                 msg = msg.split('*')
-                realmsg = TO_SER.get(msg[0]) + "," + msg[1]
+                realmsg = TO_SER.get(msg[0]) + msg[1]
             if realmsg:
                 self.ser.write(realmsg)
                 if realmsg == 'i' or realmsg == 'o':
