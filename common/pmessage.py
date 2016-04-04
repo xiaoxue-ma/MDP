@@ -69,12 +69,12 @@ class PMessage():
         if (json_str):
             obj = json.loads(json_str)
             PMessage.validate(obj['type'],obj['msg'])
-            self._type = obj['type']
-            self._msg = obj['msg']
+            self._type = obj['type'].strip()
+            self._msg = obj['msg'].strip()
         else:
             PMessage.validate(kwargs.get("type"),kwargs.get("msg"))
-            self._type = kwargs.get("type")
-            self._msg = kwargs.get("msg")
+            self._type = kwargs.get("type").strip()
+            self._msg = kwargs.get("msg").strip()
 
     @staticmethod
     def load_messages_from_json(json_str):

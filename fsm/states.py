@@ -372,8 +372,41 @@ class ExplorationDoneState(BaseState):
             return [PMessage(type=PMessage.T_COMMAND,msg=PMessage.M_START_FASTRUN)],[]
         return [],[]
 
+class SendCallibrationMsgMixin(object):
 
-class FastRunState(BaseState):
+    def send_callibration_msg(self,always_callibrate_right=False):
+        blocked_sides = self._robot_ref.get_sides_fully_blocked(self._map_ref)
+        if (blocked_sides):
+            callibration_msgs_to_send = self.get_callibration_msgs(blocked_sides,always_callibrate_right)
+        else:
+            callibration_msgs_to_send=[]
+        for msg in callibration_msgs_to_send:
+            self._machine.send_cmd_pmsg(msg)
+
+    def get_callibration_msgs(self,sides,always_callibrate_right=False):
+        "return a list of PMessage"
+        if (len(sides)==1 and sides[0]==RIGHT and
+                (always_callibrate_right or self._robot_ref.has_continuous_straight_moves(3))):
+            # if right side fully blocked, send callibration if there's at least 3 straight moves
+            debug("more than 3 straight moves in a row",DEBUG_STATES)
+            self._robot_ref.clear_history()
+            return [PMessage(type=PMessage.T_CALLIBRATE,msg=PMessage.M_CALLIBRATE_RIGHT)]
+        elif(len(sides)==1 and sides[0]==FRONT):
+            # if front side fully blocked, callibrate
+            return [PMessage(type=PMessage.T_CALLIBRATE,msg=PMessage.M_CALLIBRATE_FRONT)]
+        elif (len(sides)>1):
+            # if at corner, callibrate
+            ORI_TO_MSG = {
+                FRONT:PMessage.M_CALLIBRATE_FRONT,
+                LEFT:PMessage.M_CALLIBRATE_LEFT,
+                RIGHT: PMessage.M_CALLIBRATE_RIGHT
+            }
+            return [PMessage(type=PMessage.T_CALLIBRATE,msg=ORI_TO_MSG[s]) for s in sides]
+        else:
+            return []
+
+
+class FastRunState(BaseState,SendCallibrationMsgMixin):
     """
     only receive ack from robot
     `cmd_buffer` : a list of commands to be sent
@@ -381,6 +414,7 @@ class FastRunState(BaseState):
     """
     _USE_ROBOT_STATUS_UPDATE = True
     _USE_MULTI_GRID_MOVE_FORWARD = True
+    _SEND_CALLIBRATION_MSG = True
 
     def __str__(self):
         return "run"
@@ -404,6 +438,9 @@ class FastRunState(BaseState):
         self._robot_ref.execute_command(move)
         # update android
         self.send_robot_update(move)
+        # determine whether need to send callibration msg
+        if (self._SEND_CALLIBRATION_MSG):
+            self.send_callibration_msg(always_callibrate_right=True)
         # if still have commands, send
         if (self.cmd_buffer):
             new_move = self.cmd_buffer[0]
@@ -415,15 +452,6 @@ class FastRunState(BaseState):
 
     def send_robot_update(self,move):
         pass
-        # if (self._USE_ROBOT_STATUS_UPDATE):
-        #     msg = PMessage(type=PMessage.T_UPDATE_ROBOT_STATUS,msg="{},{},{}".format(
-        #     self._robot_ref.get_position()[0],
-        #     self._robot_ref.get_position()[1],
-        #     self._robot_ref.get_orientation().get_value()
-        # ))
-        # else:
-        #     msg = [PMessage(type=PMessage.T_ROBOT_MOVE,msg=move)]
-        # self._machine.send_data_pmsg(msg)
 
     def get_commands_for_fastrun(self):
         "return a list of command PMessage"
@@ -455,7 +483,7 @@ class FastRunState(BaseState):
     def post_process(self,label,msg):
         return [],[]
 
-class FastRunStateUsingExploration(FastRunState):
+class FastRunStateUsingExploration(FastRunState,SendCallibrationMsgMixin):
     """
     Use exploration strategy to run fast run
     `_explore_algo`: ExplorationAlgo object
@@ -494,35 +522,7 @@ class FastRunStateUsingExploration(FastRunState):
             self._machine.send_command(new_move)
             self.add_expected_ack(label=ARDUINO_LABEL,msg=PMessage(type=PMessage.T_ROBOT_MOVE,msg=new_move),call_back=self.continue_sending_command,args=[new_move])
 
-    def send_callibration_msg(self):
-        blocked_sides = self._robot_ref.get_sides_fully_blocked(self._map_ref)
-        if (blocked_sides):
-            callibration_msgs_to_send = self.get_callibration_msgs(blocked_sides)
-        else:
-            callibration_msgs_to_send=[]
-        for msg in callibration_msgs_to_send:
-            self._machine.send_cmd_pmsg(msg)
 
-    def get_callibration_msgs(self,sides):
-        "return a list of PMessage"
-        if (len(sides)==1 and sides[0]==RIGHT and self._robot_ref.has_continuous_straight_moves(3)):
-            # if right side fully blocked, send callibration if there's at least 3 straight moves
-            debug("more than 3 straight moves in a row",DEBUG_STATES)
-            self._robot_ref.clear_history()
-            return [PMessage(type=PMessage.T_CALLIBRATE,msg=PMessage.M_CALLIBRATE_RIGHT)]
-        elif(len(sides)==1 and sides[0]==FRONT):
-            # if front side fully blocked, callibrate
-            return [PMessage(type=PMessage.T_CALLIBRATE,msg=PMessage.M_CALLIBRATE_FRONT)]
-        elif (len(sides)>1):
-            # if at corner, callibrate
-            ORI_TO_MSG = {
-                FRONT:PMessage.M_CALLIBRATE_FRONT,
-                LEFT:PMessage.M_CALLIBRATE_LEFT,
-                RIGHT: PMessage.M_CALLIBRATE_RIGHT
-            }
-            return [PMessage(type=PMessage.T_CALLIBRATE,msg=ORI_TO_MSG[s]) for s in sides]
-        else:
-            return []
 
 class EndState(BaseState):
     """
