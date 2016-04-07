@@ -93,6 +93,7 @@ class MapUpdateListener(BaseObserver):
     `_map_ref`
     `_controller`
     """
+    _LAST_MSG = ''
 
     def __init__(self,*args,**kwargs):
         super(MapUpdateListener,self).__init__(*args,**kwargs)
@@ -104,9 +105,12 @@ class MapUpdateListener(BaseObserver):
     def update(self,data=None):
         cleaned_data=[(x,y) for x,y in data if not self._map_ref.is_out_of_arena(x,y)]
         if (cleaned_data):
-            self._controller.send_data_pmsg(PMessage(type=PMessage.T_UPDATE_MAP_STATUS,
-                            msg="|".join(["{},{},{}".format(x,y,self.format_cell_value(x,y))
-                                          for x,y in cleaned_data])))
+            message = "|".join(["{},{},{}".format(x,y,self.format_cell_value(x,y))
+                                          for x,y in cleaned_data])
+            if (message!=self._LAST_MSG):
+                self._controller.send_data_pmsg(PMessage(type=PMessage.T_UPDATE_MAP_STATUS,
+                            msg=message))
+                self._LAST_MSG = message
 
     def format_cell_value(self,x,y):
         if (self._map_ref.get_cell(x,y)==MapSetting.OBSTACLE):
