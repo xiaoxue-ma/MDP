@@ -92,4 +92,4 @@ def test_multithread():
         pass
 
 if __name__ == '__main__':
-    convert_text_to_binary("map-22.txt")
+    convert_text_to_binary("map-12.txt")

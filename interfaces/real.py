@@ -64,14 +64,21 @@ class ArduinoInterface(Interface):
                 debug(str(current_milli_time()) + "SER--Read from Arduino: %s" % str(msg), DEBUG_INTERFACE)
                 if msg[0] != 'T' and len(msg.split(',')) == 6:
                     realmsg = PMessage(type=PMessage.T_MAP_UPDATE, msg=msg)
+                    debug(str(current_milli_time()) + "SER--Read from Arduino after1: %s" % str(realmsg), DEBUG_INTERFACE)
                     return realmsg
                 elif msg[0] != 'T' and msg in FROM_SER:
                     if msg[0] <= '8':
                         realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=FROM_SER.get(msg[0]))
+                        debug(str(current_milli_time()) + "SER--Read from Arduino after2: %s" % str(realmsg), DEBUG_INTERFACE)
                         return realmsg
                 elif msg[0] != 'T' and len(msg) > 1:
-                    msg = FROM_SER.get(msg[0]) + "*" + msg[1:]
+                    tmp = ord(msg[1]) - 96
+                    if tmp > 1:
+                        msg = FROM_SER.get(msg[0]) + "*" + str(tmp)
+                    else:
+                        msg = FROM_SER.get(msg[0])
                     realmsg = PMessage(type=PMessage.T_ROBOT_MOVE, msg=msg)
+                    debug(str(current_milli_time()) + "SER--Read from Arduino after3: %s" % str(realmsg), DEBUG_INTERFACE)
                     return realmsg
 
         except ValidationException as e:
@@ -83,18 +90,23 @@ class ArduinoInterface(Interface):
     def write(self, msg):
         try:
             msg = msg.get_msg()
+            debug(str(current_milli_time()) + "SER--Write to Arduino b4: %s" % str(msg), DEBUG_INTERFACE)       
             realmsg = ""
             if msg in TO_SER:
                 realmsg = TO_SER.get(msg)
+                if realmsg == "0":
+                    realmsg = "0a"
             elif len(msg.split('*')) == 2:
                 msg = msg.split('*')
-                realmsg = TO_SER.get(msg[0]) + msg[1]
+                tmp = int(msg[1]) + 96
+                realmsg = TO_SER.get(msg[0]) + chr(tmp)
+
             if realmsg:
+                debug(str(current_milli_time()) + "SER--Write to Arduino: %s" % str(realmsg),DEBUG_INTERFACE)
                 self.ser.write(realmsg)
                 if realmsg == 'i' or realmsg == 'o':
                     time.sleep(self._calib_delay - self._write_delay)
                 time.sleep(self._write_delay)
-                debug(str(current_milli_time()) + "SER--Write to Arduino: %s" % str(msg),DEBUG_INTERFACE)
         except Exception, e:
             debug(str(current_milli_time()) + "SER--write exception: %s" % str(e),DEBUG_INTERFACE)
             self.reconnect()

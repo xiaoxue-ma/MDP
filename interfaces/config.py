@@ -3,8 +3,8 @@ settings to be used in all programs in the package
 """
 
 # for mock server communication
-# MOCK_SERVER_ADDR = "192.168.1.1"
-MOCK_SERVER_ADDR = "localhost"
+MOCK_SERVER_ADDR = "192.168.1.1"
+# MOCK_SERVER_ADDR = "localhost"
 ANDROID_SERVER_PORT = 9039  # server port on Rpi to serve Android
 ARDUINO_SERVER_PORT = 9029
 PC_SERVER_PORT = 9020

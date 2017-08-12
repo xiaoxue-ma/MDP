@@ -53,7 +53,7 @@ class ArduinoController(BasePublisher,BaseSimulatorController):
     controlling the internal logic of arduino simulator
     """
     EXECUTION_DELAY = 0
-    MAP_FILE_NAME = "map-1.bin"
+    MAP_FILE_NAME = "map-19.bin"
     VALID_CELL_VALUE = MapRef.VALID_CELL_VALUES
     VALID_INSTRUCTIONS = [PMessage.M_MOVE_FORWARD,PMessage.M_TURN_LEFT,PMessage.M_TURN_RIGHT,PMessage.M_START_EXPLORE,PMessage.M_START_FASTRUN,PMessage.M_RESET]
 
